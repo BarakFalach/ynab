@@ -1,0 +1,73 @@
+[
+  {
+    "id": "f5f2c8f7-c06c-41da-8ad7-48c8911c1826",
+    "category_group_id": "afbf6418-ec62-4d9b-9c9e-19113bb08291",
+    "category_group_name": "Need",
+    "name": "Groceries   🛒 ",
+    "CardName": "מזון וצריכה"
+  },
+  {
+    "id": "82984612-032f-4896-a9a5-2578e287be90",
+    "category_group_id": "5464cb0e-bd23-4962-ba0c-92d0fc7e0e63",
+    "category_group_name": "Want",
+    "name": "Food 🍔 ",
+    "CardName": "Other1"
+  },
+  {
+    "id": "5ec990a4-b61e-4b62-97bc-aa504fdff01d",
+    "category_group_id": "5464cb0e-bd23-4962-ba0c-92d0fc7e0e63",
+    "category_group_name": "Want",
+    "name": "Going out  💃🏼🕺🏽 ",
+    "CardName": "מסעדות, קפה וברים"
+  },
+  {
+    "id": "427bd092-fe84-4f77-93d2-d4600e8508c5",
+    "category_group_id": "afbf6418-ec62-4d9b-9c9e-19113bb08291",
+    "category_group_name": "Need",
+    "name": " Health 🩺 ",
+    "CardName": "רפואה ובתי מרקחת"
+  },
+  {
+    "id": "679f1333-f41f-45b8-a9dd-5948cb580481",
+    "category_group_id": "afbf6418-ec62-4d9b-9c9e-19113bb08291",
+    "category_group_name": "Need",
+    "name": "Bills  📜",
+    "CardName": "עירייה וממשלה"
+  },
+  {
+    "id": "3b702cfe-b578-47e3-9d9f-7c4c921cfd3d",
+    "category_group_id": "afbf6418-ec62-4d9b-9c9e-19113bb08291",
+    "category_group_name": "Need",
+    "name": "Transportation  🚅 ",
+    "CardName": "תחבורה ורכבים"
+  },
+  {
+    "id": "5fec7fe5-a196-4cb8-9b72-20a06f83b777",
+    "category_group_id": "5464cb0e-bd23-4962-ba0c-92d0fc7e0e63",
+    "category_group_name": "Want",
+    "name": "Coffee  ☕️ ",
+    "CardName": "Other2"
+  },
+  {
+    "id": "4b1c7594-a7cc-4ef8-aabe-c4329382b8c2",
+    "category_group_id": "afbf6418-ec62-4d9b-9c9e-19113bb08291",
+    "category_group_name": "Need",
+    "name": "Car  🚗 ",
+    "CardName": "דלק, חשמל וגז"
+  },
+  {
+    "id": "3879b5eb-5799-4369-bd26-6b6c39083fa5",
+    "category_group_id": "5464cb0e-bd23-4962-ba0c-92d0fc7e0e63",
+    "category_group_name": "Want",
+    "name": "Care & Beauty  💅🏻 ",
+    "CardName": "קוסמטיקה וטיפוח"
+  },
+  {
+    "id": "a62f1692-b123-49c2-bae0-28266afb6cf5",
+    "category_group_id": "afbf6418-ec62-4d9b-9c9e-19113bb08291",
+    "category_group_name": "Need",
+    "name": "Subscription, Games  📺 ",
+    "CardName": "שירותי תקשורת"
+  },
+  {}
+]

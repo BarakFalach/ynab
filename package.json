@@ -6,8 +6,11 @@
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "node index.js",
-    "scrap": "node scraping/getCardData.js"
+    "start": "node scraping/getCardData.js && node index.js && node scraping/getCardData.js adi && node index.js adi",
+    "map": "node index.js",
+    "barak": "node scraping/getCardData.js",
+    "adi": "node scraping/getCardData.js adi"
+
   },
   "repository": {
     "type": "git",

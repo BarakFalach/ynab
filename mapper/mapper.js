@@ -1,86 +1,79 @@
 import path from 'path';
 import XLSX from 'xlsx';
 import { fileURLToPath } from 'url';
-import { mapCardExpenseToYnabExpense } from './expenseMapper.js'
+import { mapCardExpenseToYnabExpense } from './expenseMapper.js';
 import { validateExpenses } from '../ynabApi/validator.js';
 import { uploadExpenses } from '../ynabApi/api.js';
 import { handleDuplicate } from '../ynabApi/transactions.js';
 
+const isAdiCard = process.argv[2] === 'adi';
+
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-export const mapExpenses = async () => {
-  // Load the workbook
-  const workbook = XLSX.readFile(
-    path.resolve(
-      __dirname,
-      '../downloads/transaction-details_export_1737045037965.xlsx'
-    )
-  );
+const FILE_PATH = path.resolve(
+  __dirname,
+  isAdiCard ? '../downloads/expenses2.xlsx' : '../downloads/expenses1.xlsx'
+);
 
-  // Define the desired columns
-  const desiredColumns = [
-    'תאריך עסקה',
-    'שם בית העסק',
-    'קטגוריה',
-    'סכום חיוב',
-    'סכום עסקה מקורי',
-  ];
+const DESIRED_COLUMNS = [
+  'תאריך עסקה',
+  'שם בית העסק',
+  'קטגוריה',
+  'סכום חיוב',
+  'סכום עסקה מקורי'
+];
 
-  const expenses = []; // Array to hold all expenses
+const extractRowData = (headers, row) => {
+  return DESIRED_COLUMNS.reduce((data, column) => {
+    const index = headers.indexOf(column);
+    if (index !== -1) data[column] = row[index];
+    return data;
+  }, {});
+};
 
-  // Iterate through all sheets (using for...of for async/await)
-  for (const sheetName of workbook.SheetNames) {
-    const worksheet = workbook.Sheets[sheetName];
+const processSheet = async (worksheet) => {
+  const jsonData = XLSX.utils.sheet_to_json(worksheet, {
+    range: 3,
+    header: 1,
+    defval: null,
+    blankrows: true // Include all rows, even completely blank ones
+  });
 
-    // Convert the sheet to JSON
-    const jsonData = XLSX.utils.sheet_to_json(worksheet, {
-      range: 3, // Starts from row 4
-      header: 1, // Output as arrays instead of objects
-      defval: '', // Default value for empty cells
-    });
+  const headers = jsonData[0];
+  const expenses = [];
 
-    const headers = jsonData[0];
+  for (const row of jsonData.slice(1)) {
+    const rowData = extractRowData(headers, row);
 
-    // Iterate through each row (excluding the header)
-    for (const row of jsonData.slice(1)) {
-      const rowData = {};
-
-      const dateColumnIndex = headers.indexOf('שם בית העסק');
-      if (!row[dateColumnIndex]) continue;
-
-      // Map desired columns
-      for (const column of desiredColumns) {
-        const columnIndex = headers.indexOf(column);
-        if (columnIndex !== -1) {
-          rowData[column] = row[columnIndex];
-        }
-      }
-
-      // Extract data for mapping
-      const date = rowData['תאריך עסקה'];
-      const payee_name = rowData['שם בית העסק'];
-      const cardCategory = rowData['קטגוריה'];
-      const amount = rowData['סכום חיוב'];
-      const memo = rowData['סכום עסקה מקורי'];
-
-      // Map and collect the expense
-      const expense = await mapCardExpenseToYnabExpense(
-        date,
-        payee_name,
-        cardCategory,
-        amount,
-        memo
-      );
-      if (expense) expenses.push(expense);
-    }
+    const { 'תאריך עסקה': date, 'שם בית העסק': payee, 'קטגוריה': category, 'סכום חיוב': amount, 'סכום עסקה מקורי': notFinalAmount } = rowData;
+    const expense = await mapCardExpenseToYnabExpense(date, payee, category,amount ?? notFinalAmount, notFinalAmount);
+    if (expense) expenses.push(expense);
   }
 
-  if (expenses.length > 0) {
-    const valid = validateExpenses(expenses);
-    const uniqueExpenses = handleDuplicate(valid);
-    uploadExpenses(uniqueExpenses)
-  } else {
-    console.log('No expenses to upload.');
+  return expenses;
+};
+
+export const mapExpenses = async () => {
+  try {
+    const workbook = XLSX.readFile(FILE_PATH);
+    let allExpenses = [];
+
+    for (const sheetName of workbook.SheetNames) {
+      const worksheet = workbook.Sheets[sheetName];
+      const sheetExpenses = await processSheet(worksheet);
+      allExpenses = allExpenses.concat(sheetExpenses);
+    }
+
+    if (allExpenses.length) {
+      const validatedExpenses = validateExpenses(allExpenses);
+      const uniqueExpenses = handleDuplicate(validatedExpenses);
+      await uploadExpenses(uniqueExpenses);
+      console.log('Expenses uploaded successfully.');
+    } else {
+      console.log('No expenses to upload.');
+    }
+  } catch (error) {
+    console.error('Error processing expenses:', error);
   }
 };

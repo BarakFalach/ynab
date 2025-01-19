@@ -18,8 +18,9 @@ export const mapCardExpenseToYnabExpense = async (
   amount,
   memo
 ) => {
+  const isAdiCard = process.argv[2] === 'adi';
   try {
-    const account_id = process.env.BARAK_CARD;
+    const account_id = isAdiCard ? process.env.ADI_CARD  :  process.env.BARAK_CARD;
     const categoriesMapper = readJSONFile('./mapper/CategoriesMapper.json');
     const category_id =
       categoriesMapper.find((category) => category.CardName === cardCategory)?.id ?? null;

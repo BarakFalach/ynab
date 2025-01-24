@@ -7,10 +7,10 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "start": "node scraping/getCardData.js && node index.js && node scraping/getCardData.js adi && node index.js adi",
+    "server": "node endpoints/server.js",
     "map": "node index.js",
     "barak": "node scraping/getCardData.js",
     "adi": "node scraping/getCardData.js adi"
-
   },
   "repository": {
     "type": "git",
@@ -25,7 +25,9 @@
   "homepage": "https://github.com/BarakFalach/ynab#readme",
   "dependencies": {
     "axios": "^1.7.9",
+    "child_process": "^1.0.2",
     "dotenv": "^16.4.7",
+    "express": "^4.21.2",
     "nodemon": "^3.1.9",
     "playwright": "^1.49.1",
     "xlsx": "^0.18.5"

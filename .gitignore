@@ -4,3 +4,4 @@ node_modules
 transactionLog.json
 downloads/
 .DS_Store
+.vercel

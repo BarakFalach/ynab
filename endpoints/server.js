@@ -1,12 +1,12 @@
 import express from 'express';
 import { exec } from 'child_process';
+import { createServer } from 'http';
+
 const app = express();
 
 app.get('/run-script', (req, res) => {
+  const command = "node scraping/getCardData.js && node index.js && node scraping/getCardData.js adi && node index.js adi";
 
-  const command = "node scraping/getCardData.js && node index.js && node scraping/getCardData.js adi && node index.js adi"
-
-  // Execute the script
   exec(command, (error, stdout, stderr) => {
     if (error) {
       console.error(`Error executing script: ${error.message}`);
@@ -18,6 +18,7 @@ app.get('/run-script', (req, res) => {
   });
 });
 
-app.listen(3000, () => {
-  console.log('Server is running on port 3000');
-});
+export default (req, res) => {
+  const server = createServer(app);
+  server.emit('request', req, res);
+};

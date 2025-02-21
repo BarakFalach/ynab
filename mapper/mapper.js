@@ -5,23 +5,12 @@ import { mapCardExpenseToYnabExpense } from './expenseMapper.js';
 import { validateExpenses } from '../ynabApi/validator.js';
 import { uploadExpenses } from '../ynabApi/api.js';
 import { handleDuplicate } from '../ynabApi/transactions.js';
-import { db } from '../firebase/firebaseConfig.js';
-import dotenv from 'dotenv';  // Use import if using ES Modules
+import dotenv from 'dotenv';
 
 dotenv.config();
 
-console.log('Mapping expenses...', process.argv[2]);
-
-
-const isAdiCard = process.argv[2] === 'adi';
-
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-
-const FILE_PATH = path.resolve(
-  __dirname,
-  isAdiCard ? '../downloads/expenses2.xlsx' : '../downloads/expenses1.xlsx'
-);
 
 const DESIRED_COLUMNS = [
   'תאריך עסקה',
@@ -44,7 +33,7 @@ const processSheet = async (worksheet) => {
     range: 3,
     header: 1,
     defval: null,
-    blankrows: true // Include all rows, even completely blank ones
+    blankrows: true
   });
 
   const headers = jsonData[0];
@@ -52,17 +41,17 @@ const processSheet = async (worksheet) => {
 
   for (const row of jsonData.slice(1)) {
     const rowData = extractRowData(headers, row);
-
     const { 'תאריך עסקה': date, 'שם בית העסק': payee, 'קטגוריה': category, 'סכום חיוב': amount, 'סכום עסקה מקורי': notFinalAmount } = rowData;
-    const expense = await mapCardExpenseToYnabExpense(date, payee, category,amount ?? notFinalAmount, notFinalAmount);
+    const expense = await mapCardExpenseToYnabExpense(date, payee, category, amount ?? notFinalAmount, notFinalAmount);
     if (expense) expenses.push(expense);
   }
 
   return expenses;
 };
 
-export const mapExpenses = async () => {
+export const mapExpenses = async (isAdiCard) => {
   try {
+    const FILE_PATH = path.resolve(__dirname, isAdiCard ? '../downloads/expenses2.xlsx' : '../downloads/expenses1.xlsx');
     const workbook = XLSX.readFile(FILE_PATH);
     let allExpenses = [];
 
@@ -81,9 +70,6 @@ export const mapExpenses = async () => {
       console.log('No expenses to upload - after type check');
     }
   } catch (error) {
-    db.
     console.error('Error processing expenses:', error);
   }
 };
-
-mapExpenses();

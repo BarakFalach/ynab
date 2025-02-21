@@ -7,7 +7,7 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "start": "node scraping/getCardData.js && node mapper/mapper.js && node scraping/getCardData.js adi && node mapper/mapper adi",
-    "server": "node endpoints/server.js",
+    "server": "node api/index.js",
     "map": "node index.js",
     "barak": "node scraping/getCardData.js",
     "adi": "node scraping/getCardData.js adi"

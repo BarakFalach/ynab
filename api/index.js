@@ -1,11 +1,14 @@
 import express from 'express';
-import { exec } from 'child_process';
 import { mapExpenses } from '../mapper/mapper.js';
+import { downloadExpenses } from '../scraping/getCardData.js';
 const app = express();
 
 app.get('/run-script', async (req, res) => {
 
-  await mapExpenses();
+  await downloadExpenses(false);
+  await mapExpenses(false);
+  await downloadExpenses(true);
+  await mapExpenses(true);
   res.send('Script has finished running');
 
 });

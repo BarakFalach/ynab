@@ -50,14 +50,14 @@ console.log('Logging in with username:', username);
 
 
   console.log('waiting for login page to load');
-  await page.waitForSelector('span[_ngcontent-my-app-id-c147=""]', {
+  await page.waitForSelector('span[_ngcontent-my-app-id-c149=""]', {
     timeout: 20000,
   }); // Wait for the login page to load
   console.log('login page loaded');
-  await page.locator('span[_ngcontent-my-app-id-c147=""]').nth(1).click(); // password tab 
+  await page.locator('span[_ngcontent-my-app-id-c149=""]').nth(1).click(); // password tab 
   await page.fill('[formcontrolname="username"]', username);
   await page.fill('[formcontrolname="password"]', password);
-  await page.click('button[_ngcontent-my-app-id-c142=""]');
+  await page.click('button[_ngcontent-my-app-id-c144=""]');
 
   await page.waitForSelector('.only-card-wrapper > :first-child'); // Wait for the card to load
   console.log('Logged in successfully!');

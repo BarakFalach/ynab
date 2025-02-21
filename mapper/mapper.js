@@ -5,6 +5,12 @@ import { mapCardExpenseToYnabExpense } from './expenseMapper.js';
 import { validateExpenses } from '../ynabApi/validator.js';
 import { uploadExpenses } from '../ynabApi/api.js';
 import { handleDuplicate } from '../ynabApi/transactions.js';
+import dotenv from 'dotenv';  // Use import if using ES Modules
+
+dotenv.config();
+
+console.log('Mapping expenses...', process.argv[2]);
+
 
 const isAdiCard = process.argv[2] === 'adi';
 
@@ -77,3 +83,5 @@ export const mapExpenses = async () => {
     console.error('Error processing expenses:', error);
   }
 };
+
+mapExpenses();

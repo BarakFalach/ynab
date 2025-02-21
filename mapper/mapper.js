@@ -5,6 +5,7 @@ import { mapCardExpenseToYnabExpense } from './expenseMapper.js';
 import { validateExpenses } from '../ynabApi/validator.js';
 import { uploadExpenses } from '../ynabApi/api.js';
 import { handleDuplicate } from '../ynabApi/transactions.js';
+import { db } from '../firebase/firebaseConfig.js';
 import dotenv from 'dotenv';  // Use import if using ES Modules
 
 dotenv.config();
@@ -73,13 +74,14 @@ export const mapExpenses = async () => {
 
     if (allExpenses.length) {
       const validatedExpenses = validateExpenses(allExpenses);
-      const uniqueExpenses = handleDuplicate(validatedExpenses);
+      const uniqueExpenses = await handleDuplicate(validatedExpenses, isAdiCard);
       await uploadExpenses(uniqueExpenses);
       console.log('Expenses uploaded successfully.');
     } else {
-      console.log('No expenses to upload.');
+      console.log('No expenses to upload - after type check');
     }
   } catch (error) {
+    db.
     console.error('Error processing expenses:', error);
   }
 };

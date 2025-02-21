@@ -5,6 +5,17 @@ export const validateExpense = (expense) => {
   if (!expense.date || !/^\d{4}-\d{2}-\d{2}$/.test(expense.date)) {
     return { valid: false, message: 'Missing or invalid date format (YYYY-MM-DD)' };
   }
+  const expenseDate = new Date(expense.date);
+  const today = new Date();
+  const fiveYearsAgo = new Date();
+  fiveYearsAgo.setFullYear(today.getFullYear() - 5);
+
+  if (expenseDate > today) {
+    return { valid: false, message: 'Date cannot be in the future' };
+  }
+  if (expenseDate < fiveYearsAgo) {
+    return { valid: false, message: 'Date cannot be more than 5 years in the past' };
+  }
   if (
     expense.amount === undefined ||
     typeof expense.amount !== 'number' ||

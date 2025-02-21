@@ -8,13 +8,14 @@ export const uploadExpenses = async (expenses) => {
   const accessToken = process.env.YNAB_ACCESS_TOKEN;
 
   if (expenses.length === 0) {
-    console.log('No expenses to upload.');
+    console.log('No expenses to upload. after duplicate check');
     return;
   }
 
   const chunkedExpenses = chunkArray(expenses, 50);
   for (const chunk of chunkedExpenses) {
     try {
+      console.log('Uploading chunk:');
       const response = await axios.post(
         `${YNAB_API_URL}/budgets/${budgetId}/transactions`,
         { transactions: chunk },
@@ -22,7 +23,7 @@ export const uploadExpenses = async (expenses) => {
       );
       console.log('Bulk upload successful:', response.data);
     } catch (error) {
-      console.error('ERROR', error.response ? error.response : error.message);
+      console.error('ERROR', error.data.error);
     }
   }
 };

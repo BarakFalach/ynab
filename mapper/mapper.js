@@ -28,7 +28,7 @@ const extractRowData = (headers, row) => {
   }, {});
 };
 
-const processSheet = async (worksheet) => {
+const processSheet = async (worksheet, isAdiCard) => {
   const jsonData = XLSX.utils.sheet_to_json(worksheet, {
     range: 3,
     header: 1,
@@ -42,7 +42,8 @@ const processSheet = async (worksheet) => {
   for (const row of jsonData.slice(1)) {
     const rowData = extractRowData(headers, row);
     const { 'תאריך עסקה': date, 'שם בית העסק': payee, 'קטגוריה': category, 'סכום חיוב': amount, 'סכום עסקה מקורי': notFinalAmount } = rowData;
-    const expense = await mapCardExpenseToYnabExpense(date, payee, category, amount ?? notFinalAmount, notFinalAmount);
+    const expense = await mapCardExpenseToYnabExpense({
+      date, payee_name: payee, cardCategory: category, amount :amount ?? notFinalAmount, memo: notFinalAmount}, isAdiCard);
     if (expense) expenses.push(expense);
   }
 
@@ -57,7 +58,7 @@ export const mapExpenses = async (isAdiCard) => {
 
     for (const sheetName of workbook.SheetNames) {
       const worksheet = workbook.Sheets[sheetName];
-      const sheetExpenses = await processSheet(worksheet);
+      const sheetExpenses = await processSheet(worksheet, isAdiCard);
       allExpenses = allExpenses.concat(sheetExpenses);
     }
 

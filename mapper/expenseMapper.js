@@ -12,11 +12,11 @@ import { formatDateForYNAB } from '../utils/dateUtils.js';
 // }
 
 export const mapCardExpenseToYnabExpense = async (
-  date,
+  {date,
   payee_name,
   cardCategory,
   amount,
-  memo
+  memo}, isAdiCard
 ) => {
   const isAdiCard = process.argv[2] === 'adi';
   try {

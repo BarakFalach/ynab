@@ -17,7 +17,7 @@ export async function downloadExpenses(isAdiCard) {
 
   console.log('Logging in with username:', username);
 
-  const browser = await chromium.launch({ headless: false });
+  const browser = await chromium.launch({ headless: true });
   const page = await browser.newPage();
   await page.setViewportSize({ width: 1280, height: 1024 });
 

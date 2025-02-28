@@ -24,11 +24,14 @@ export const mapCardExpenseToYnabExpense = async (
     const category_id =
       categoriesMapper.find((category) => category.CardName === cardCategory)?.id ?? null;
     const ynabDate = formatDateForYNAB(date);
+  
+    const nameWithOutSlash = payee_name.replace(/[\\/]/g, '');
+
 
     return {
       account_id,
       date: ynabDate,
-      payee_name,
+      payee_name: nameWithOutSlash,
       category_id,
       amount: Math.round(amount * -1000),
       memo,

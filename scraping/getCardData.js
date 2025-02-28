@@ -17,7 +17,7 @@ export async function downloadExpenses(isAdiCard) {
 
   console.log('Logging in with username:', username);
 
-  const browser = await chromium.launch({ headless: true });
+  const browser = await chromium.launch({ headless: false });
   const page = await browser.newPage();
   await page.setViewportSize({ width: 1280, height: 1024 });
 
@@ -48,8 +48,8 @@ export async function downloadExpenses(isAdiCard) {
   console.log('Logged in successfully!');
 
   isAdiCard
-    ? await page.locator('div.card.card-box.card-box-url.ng-star-inserted[_ngcontent-my-app-id-c113][appgtm]').nth(2).click()
-    : await page.locator('div.card.card-box.card-box-url.ng-star-inserted[_ngcontent-my-app-id-c113][appgtm]').nth(0).click();
+    ? await page.locator('div.card.card-box.card-box-url.ng-star-inserted[_ngcontent-my-app-id-c111][appgtm]').nth(2).click()
+    : await page.locator('div.card.card-box.card-box-url.ng-star-inserted[_ngcontent-my-app-id-c111][appgtm]').nth(0).click();
 
   await page.locator('span.download-excel').click();
   await page.waitForTimeout(5000);

@@ -66,7 +66,3 @@ async function getCategories() {
         console.error('Error fetching categories:', error.response?.data || error.message);
     }
 }
-
-// getAccountInfo();
-
-// getCategories();

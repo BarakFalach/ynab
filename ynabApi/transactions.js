@@ -1,39 +1,68 @@
-import { db } from "../firebase/firebaseConfig.js";
-import { collection, doc, getDocs, setDoc, writeBatch, query, where } from "firebase/firestore";
+import fs from 'fs/promises';
+import path from 'path';
+
+// Path to local JSON file for transaction logs
+const TRANSACTION_LOG_PATH = path.join(process.cwd(), 'data', 'transactionLog.json');
+
+// Helper function to ensure the data directory exists and create the JSON file if it doesn't
+async function ensureTransactionLogExists() {
+  try {
+    // Ensure data directory exists
+    const dataDir = path.join(process.cwd(), 'data');
+    try {
+      await fs.mkdir(dataDir, { recursive: true });
+    } catch (err) {
+      // Directory might already exist, which is fine
+      if (err.code !== 'EEXIST') throw err;
+    }
+    
+    // Check if file exists, create if not
+    try {
+      await fs.access(TRANSACTION_LOG_PATH);
+    } catch {
+      // File doesn't exist, create it with empty object
+      await fs.writeFile(TRANSACTION_LOG_PATH, JSON.stringify({}), 'utf8');
+    }
+  } catch (error) {
+    console.error('Error ensuring transaction log exists:', error);
+    throw error;
+  }
+}
+
+// Function to read the transaction log
+async function readTransactionLog() {
+  await ensureTransactionLogExists();
+  const data = await fs.readFile(TRANSACTION_LOG_PATH, 'utf8');
+  return JSON.parse(data);
+}
+
+// Function to write to the transaction log
+async function writeTransactionLog(data) {
+  await fs.writeFile(TRANSACTION_LOG_PATH, JSON.stringify(data, null, 2), 'utf8');
+}
 
 export const handleDuplicate = async (expenses, isAdiCard) => {
-  const transactionLogRef = collection(db, "transactionLog");
-
   // Step 1: Generate all keys
   const keys = expenses.map((tx) => `${tx.payee_name}-${tx.date}-${tx.amount}-${isAdiCard}`);
 
-  // Step 2: Fetch existing keys in batches of 10
-  const chunkSize = 10;
-  const existingKeys = new Set();
-
-  for (let i = 0; i < keys.length; i += chunkSize) {
-    const chunk = keys.slice(i, i + chunkSize);
-    const q = query(transactionLogRef, where("__name__", "in", chunk));
-    const querySnapshot = await getDocs(q);
-
-    querySnapshot.forEach((doc) => existingKeys.add(doc.id));
-  }
+  // Step 2: Load existing transaction log
+  const transactionLog = await readTransactionLog();
 
   // Step 3: Filter unique transactions
   const uniqueTransactions = expenses.filter((tx) => {
     const key = `${tx.payee_name}-${tx.date}-${tx.amount}-${isAdiCard}`;
-    return !existingKeys.has(key);
+    return !transactionLog[key];
   });
 
-  // Step 4: Batch write new transactions
-  const batch = writeBatch(db);
-  uniqueTransactions.forEach((tx) => {
-    const key = `${tx.payee_name}-${tx.date}-${tx.amount}-${isAdiCard}`;
-    batch.set(doc(transactionLogRef, key), { exists: true });
-  });
-
+  // Step 4: Update transaction log with new transactions
   if (uniqueTransactions.length > 0) {
-    await batch.commit(); // Execute batch write only if there are new transactions
+    uniqueTransactions.forEach((tx) => {
+      const key = `${tx.payee_name}-${tx.date}-${tx.amount}-${isAdiCard}`;
+      transactionLog[key] = { exists: true };
+    });
+    
+    // Write updated log back to file
+    await writeTransactionLog(transactionLog);
   }
 
   return uniqueTransactions;

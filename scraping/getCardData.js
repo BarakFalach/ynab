@@ -37,19 +37,23 @@ export async function downloadExpenses(isAdiCard) {
   console.log('Navigating to the login page');
   await page.goto('https://www.max.co.il/login', { waitUntil: 'commit' });
   console.log('Waiting for login page to load');
-  await page.waitForSelector('span[_ngcontent-my-app-id-c149=""]', { timeout: 20000 });
+  await page.waitForSelector('span[_ngcontent-my-app-id-c168=""]', { timeout: 20000 });
   console.log('Login page loaded');
-  await page.locator('span[_ngcontent-my-app-id-c149=""]').nth(1).click(); // password tab
+  await page.locator('span[_ngcontent-my-app-id-c168=""]').nth(1).click(); // password tab
   await page.fill('[formcontrolname="username"]', username);
   await page.fill('[formcontrolname="password"]', password);
-  await page.click('button[_ngcontent-my-app-id-c144=""]');
+  await page.click('button[_ngcontent-my-app-id-c163=""]');
 
   await page.waitForSelector('.only-card-wrapper > :first-child');
   console.log('Logged in successfully!');
 
+  // announcement modal
+  await page.waitForSelector('span[_ngcontent-my-app-id-c118=""]');
+  await page.click('span[_ngcontent-my-app-id-c118=""]'); // click on the card
+
   isAdiCard
-    ? await page.locator('div.card.card-box.card-box-url.ng-star-inserted[_ngcontent-my-app-id-c111][appgtm]').nth(2).click()
-    : await page.locator('div.card.card-box.card-box-url.ng-star-inserted[_ngcontent-my-app-id-c111][appgtm]').nth(0).click();
+    ? await page.locator('div.card.card-box.card-box-url.ng-star-inserted[_ngcontent-my-app-id-c126][appgtm]').nth(2).click()
+    : await page.locator('div.card.card-box.card-box-url.ng-star-inserted[_ngcontent-my-app-id-c126][appgtm]').nth(0).click();
 
   await page.locator('span.download-excel').click();
   await page.waitForTimeout(5000);

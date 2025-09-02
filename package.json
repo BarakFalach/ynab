@@ -10,7 +10,11 @@
     "server": "node api/index.js",
     "map": "node index.js",
     "barak": "node scraping/getCardData.js",
-    "adi": "node scraping/getCardData.js adi"
+    "adi": "node scraping/getCardData.js adi",
+    "dev": "nodemon api/index.js",
+    "build": "echo 'No build step required'",
+    "railway:deploy": "railway up",
+    "railway:logs": "railway logs"
   },
   "repository": {
     "type": "git",

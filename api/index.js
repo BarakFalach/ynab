@@ -2,6 +2,7 @@ import express from 'express';
 import { mapExpenses } from '../mapper/mapper.js';
 import { downloadExpenses } from '../scraping/getCardData.js';
 import { getTransactionStats, getAllTransactions, searchTransactions } from '../ynabApi/transactions.js';
+import { Pool } from 'pg';
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
@@ -44,6 +45,58 @@ const log = (message, type = 'info') => {
   }
 };
 
+// Database initialization
+const initializeDatabase = async () => {
+  try {
+    console.log('🔧 Initializing database...');
+    console.log('🔧 DATABASE_URL exists:', !!process.env.DATABASE_URL);
+    console.log('🔧 NODE_ENV:', process.env.NODE_ENV);
+    console.log('🔧 RAILWAY_ENVIRONMENT:', process.env.RAILWAY_ENVIRONMENT);
+    
+    const connectionString = process.env.DATABASE_URL;
+    if (!connectionString) {
+      throw new Error('DATABASE_URL environment variable is required');
+    }
+    
+    const isProduction = process.env.NODE_ENV === 'production' || process.env.RAILWAY_ENVIRONMENT;
+    const pool = new Pool({
+      connectionString,
+      ssl: isProduction ? { rejectUnauthorized: false } : false
+    });
+    
+    // Test connection first
+    const client = await pool.connect();
+    console.log('✅ Database connection successful');
+    client.release();
+    
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS transaction_logs (
+        id SERIAL PRIMARY KEY,
+        transaction_key VARCHAR(500) UNIQUE NOT NULL,
+        payee_name VARCHAR(255) NOT NULL,
+        transaction_date DATE NOT NULL,
+        amount INTEGER NOT NULL,
+        card_type BOOLEAN NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+    
+    // Create index for faster lookups
+    await pool.query(`
+      CREATE INDEX IF NOT EXISTS idx_transaction_key 
+      ON transaction_logs(transaction_key)
+    `);
+    
+    console.log('✅ Database initialized successfully');
+    await pool.end();
+  } catch (error) {
+    console.error('❌ Database initialization failed:', error);
+    console.error('❌ Error details:', error.message);
+    console.error('❌ Error code:', error.code);
+    throw error;
+  }
+};
+
 // Status tracking
 let lastRunStatus = null;
 
@@ -53,6 +106,8 @@ const runScript = async () => {
   lastRunStatus = { status: 'running', startTime: new Date().toISOString() };
   
   try {
+    // Initialize database first
+    await initializeDatabase();
     // Download and process Barak's card
     log('📥 Downloading expenses for Barak', 'info');
     await downloadExpenses(false);
@@ -228,11 +283,24 @@ app.get('/transactions/search', async (req, res) => {
   }
 });
 
-// Start server
+// Start server with database initialization
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
-  console.log(`🚀 Server is running on port ${PORT}`);
-  log(`Server started on port ${PORT}`, 'info');
-});
+
+const startServer = async () => {
+  try {
+    // Initialize database on startup
+    await initializeDatabase();
+    
+    app.listen(PORT, () => {
+      console.log(`🚀 Server is running on port ${PORT}`);
+      log(`Server started on port ${PORT}`, 'info');
+    });
+  } catch (error) {
+    console.error('❌ Failed to start server:', error);
+    process.exit(1);
+  }
+};
+
+startServer();
 
 export default app;

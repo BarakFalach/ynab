@@ -43,7 +43,7 @@ WORKDIR /app
 COPY package.json package-lock.json ./
 
 # Install all dependencies (including dev dependencies for Playwright)
-RUN npm ci
+RUN npm install
 
 # Install Playwright browsers
 RUN npx playwright install chromium

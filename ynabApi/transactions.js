@@ -1,69 +1,125 @@
-import fs from 'fs/promises';
-import path from 'path';
+import { Pool } from 'pg';
+import dotenv from 'dotenv';
 
-// Path to local JSON file for transaction logs
-const TRANSACTION_LOG_PATH = path.join(process.cwd(), 'data', 'transactionLog.json');
+dotenv.config();
 
-// Helper function to ensure the data directory exists and create the JSON file if it doesn't
-async function ensureTransactionLogExists() {
+// Database connection
+const pool = new Pool({
+  connectionString: process.env.DATABASE_URL,
+  ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false
+});
+
+// Initialize database table
+async function initializeDatabase() {
   try {
-    // Ensure data directory exists
-    const dataDir = path.join(process.cwd(), 'data');
-    try {
-      await fs.mkdir(dataDir, { recursive: true });
-    } catch (err) {
-      // Directory might already exist, which is fine
-      if (err.code !== 'EEXIST') throw err;
-    }
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS transaction_logs (
+        id SERIAL PRIMARY KEY,
+        transaction_key VARCHAR(500) UNIQUE NOT NULL,
+        payee_name VARCHAR(255) NOT NULL,
+        transaction_date DATE NOT NULL,
+        amount INTEGER NOT NULL,
+        card_type BOOLEAN NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
     
-    // Check if file exists, create if not
-    try {
-      await fs.access(TRANSACTION_LOG_PATH);
-    } catch {
-      // File doesn't exist, create it with empty object
-      await fs.writeFile(TRANSACTION_LOG_PATH, JSON.stringify({}), 'utf8');
-    }
+    // Create index for faster lookups
+    await pool.query(`
+      CREATE INDEX IF NOT EXISTS idx_transaction_key 
+      ON transaction_logs(transaction_key)
+    `);
+    
+    console.log('✅ Database initialized successfully');
   } catch (error) {
-    console.error('Error ensuring transaction log exists:', error);
+    console.error('❌ Database initialization failed:', error);
     throw error;
   }
 }
 
-// Function to read the transaction log
-async function readTransactionLog() {
-  await ensureTransactionLogExists();
-  const data = await fs.readFile(TRANSACTION_LOG_PATH, 'utf8');
-  return JSON.parse(data);
+// Check if transaction exists
+async function transactionExists(transactionKey) {
+  try {
+    const result = await pool.query(
+      'SELECT id FROM transaction_logs WHERE transaction_key = $1',
+      [transactionKey]
+    );
+    return result.rows.length > 0;
+  } catch (error) {
+    console.error('❌ Error checking transaction:', error);
+    return false;
+  }
 }
 
-// Function to write to the transaction log
-async function writeTransactionLog(data) {
-  await fs.writeFile(TRANSACTION_LOG_PATH, JSON.stringify(data, null, 2), 'utf8');
+// Add transaction to log
+async function addTransaction(transactionKey, payeeName, date, amount, cardType) {
+  try {
+    await pool.query(`
+      INSERT INTO transaction_logs (transaction_key, payee_name, transaction_date, amount, card_type)
+      VALUES ($1, $2, $3, $4, $5)
+      ON CONFLICT (transaction_key) DO NOTHING
+    `, [transactionKey, payeeName, date, amount, cardType]);
+  } catch (error) {
+    console.error('❌ Error adding transaction:', error);
+    throw error;
+  }
 }
 
 export const handleDuplicate = async (expenses, isAdiCard) => {
-  // Step 1: Generate all keys
-  const keys = expenses.map((tx) => `${tx.payee_name}-${tx.date}-${tx.amount}-${isAdiCard}`);
-
-  // Step 2: Load existing transaction log
-  const transactionLog = await readTransactionLog();
-
-  // Step 3: Filter unique transactions
-  const uniqueTransactions = expenses.filter((tx) => {
-    const key = `${tx.payee_name}-${tx.date}-${tx.amount}-${isAdiCard}`;
-    return !transactionLog[key];
-  });
-
-  // Step 4: Update transaction log with new transactions
-  if (uniqueTransactions.length > 0) {
-    uniqueTransactions.forEach((tx) => {
-      const key = `${tx.payee_name}-${tx.date}-${tx.amount}-${isAdiCard}`;
-      transactionLog[key] = { exists: true };
-    });
+  try {
+    // Initialize database if needed
+    await initializeDatabase();
     
-    // Write updated log back to file
-    await writeTransactionLog(transactionLog);
+    // Filter unique transactions
+    const uniqueTransactions = [];
+    
+    for (const expense of expenses) {
+      const transactionKey = `${expense.payee_name}-${expense.date}-${expense.amount}-${isAdiCard}`;
+      
+      // Check if transaction already exists
+      const exists = await transactionExists(transactionKey);
+      
+      if (!exists) {
+        uniqueTransactions.push(expense);
+        
+        // Add to database
+        await addTransaction(
+          transactionKey,
+          expense.payee_name,
+          expense.date,
+          expense.amount,
+          isAdiCard
+        );
+      }
+    }
+    
+    console.log(`📊 Found ${uniqueTransactions.length} new transactions out of ${expenses.length} total`);
+    return uniqueTransactions;
+    
+  } catch (error) {
+    console.error('❌ Error handling duplicates:', error);
+    // Fallback to original expenses if database fails
+    return expenses;
   }
+};
 
-  return uniqueTransactions;
+// Get transaction statistics
+export const getTransactionStats = async () => {
+  try {
+    const result = await pool.query(`
+      SELECT 
+        card_type,
+        COUNT(*) as total_transactions,
+        SUM(amount) as total_amount,
+        MIN(created_at) as first_transaction,
+        MAX(created_at) as last_transaction
+      FROM transaction_logs 
+      GROUP BY card_type
+    `);
+    
+    return result.rows;
+  } catch (error) {
+    console.error('❌ Error getting stats:', error);
+    return [];
+  }
 };

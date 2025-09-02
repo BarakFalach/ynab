@@ -1,6 +1,7 @@
 import express from 'express';
 import { mapExpenses } from '../mapper/mapper.js';
 import { downloadExpenses } from '../scraping/getCardData.js';
+import { getTransactionStats } from '../ynabApi/transactions.js';
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
@@ -163,6 +164,22 @@ app.get('/health', (req, res) => {
 // Serve dashboard
 app.get('/dashboard', (req, res) => {
   res.sendFile(path.join(__dirname, '../public/dashboard.html'));
+});
+
+// Get transaction statistics
+app.get('/stats', async (req, res) => {
+  try {
+    const stats = await getTransactionStats();
+    res.json({
+      success: true,
+      stats: stats
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
 });
 
 // Start server

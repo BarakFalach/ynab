@@ -3,15 +3,39 @@ import dotenv from 'dotenv';
 
 dotenv.config();
 
-// Database connection
-const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,
-  ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false
-});
+// Database connection with smart configuration
+const getDatabaseConfig = () => {
+  const connectionString = process.env.DATABASE_URL;
+  
+  if (!connectionString) {
+    throw new Error('DATABASE_URL environment variable is required');
+  }
+  
+  // For Railway production, use SSL
+  // For local development, disable SSL
+  const isProduction = process.env.NODE_ENV === 'production' || process.env.RAILWAY_ENVIRONMENT;
+  
+  return {
+    connectionString,
+    ssl: isProduction ? { rejectUnauthorized: false } : false
+  };
+};
+
+const pool = new Pool(getDatabaseConfig());
 
 // Initialize database table
 async function initializeDatabase() {
   try {
+    console.log('🔧 Initializing database...');
+    console.log('🔧 DATABASE_URL exists:', !!process.env.DATABASE_URL);
+    console.log('🔧 NODE_ENV:', process.env.NODE_ENV);
+    console.log('🔧 RAILWAY_ENVIRONMENT:', process.env.RAILWAY_ENVIRONMENT);
+    
+    // Test connection first
+    const client = await pool.connect();
+    console.log('✅ Database connection successful');
+    client.release();
+    
     await pool.query(`
       CREATE TABLE IF NOT EXISTS transaction_logs (
         id SERIAL PRIMARY KEY,
@@ -33,6 +57,8 @@ async function initializeDatabase() {
     console.log('✅ Database initialized successfully');
   } catch (error) {
     console.error('❌ Database initialization failed:', error);
+    console.error('❌ Error details:', error.message);
+    console.error('❌ Error code:', error.code);
     throw error;
   }
 }
@@ -121,5 +147,83 @@ export const getTransactionStats = async () => {
   } catch (error) {
     console.error('❌ Error getting stats:', error);
     return [];
+  }
+};
+
+// Get all transactions with pagination
+export const getAllTransactions = async (page = 1, limit = 50) => {
+  try {
+    const offset = (page - 1) * limit;
+    
+    const result = await pool.query(`
+      SELECT 
+        id,
+        payee_name,
+        transaction_date,
+        amount,
+        card_type,
+        created_at
+      FROM transaction_logs 
+      ORDER BY created_at DESC
+      LIMIT $1 OFFSET $2
+    `, [limit, offset]);
+    
+    // Get total count
+    const countResult = await pool.query('SELECT COUNT(*) FROM transaction_logs');
+    const total = parseInt(countResult.rows[0].count);
+    
+    return {
+      transactions: result.rows,
+      pagination: {
+        page,
+        limit,
+        total,
+        totalPages: Math.ceil(total / limit)
+      }
+    };
+  } catch (error) {
+    console.error('❌ Error getting transactions:', error);
+    return { transactions: [], pagination: { page: 1, limit, total: 0, totalPages: 0 } };
+  }
+};
+
+// Search transactions
+export const searchTransactions = async (query, page = 1, limit = 50) => {
+  try {
+    const offset = (page - 1) * limit;
+    
+    const result = await pool.query(`
+      SELECT 
+        id,
+        payee_name,
+        transaction_date,
+        amount,
+        card_type,
+        created_at
+      FROM transaction_logs 
+      WHERE payee_name ILIKE $1
+      ORDER BY created_at DESC
+      LIMIT $2 OFFSET $3
+    `, [`%${query}%`, limit, offset]);
+    
+    // Get total count for search
+    const countResult = await pool.query(
+      'SELECT COUNT(*) FROM transaction_logs WHERE payee_name ILIKE $1',
+      [`%${query}%`]
+    );
+    const total = parseInt(countResult.rows[0].count);
+    
+    return {
+      transactions: result.rows,
+      pagination: {
+        page,
+        limit,
+        total,
+        totalPages: Math.ceil(total / limit)
+      }
+    };
+  } catch (error) {
+    console.error('❌ Error searching transactions:', error);
+    return { transactions: [], pagination: { page: 1, limit, total: 0, totalPages: 0 } };
   }
 };

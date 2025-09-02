@@ -1,0 +1,373 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>YNAB Transaction Database</title>
+    <style>
+        * { 
+            margin: 0; 
+            padding: 0; 
+            box-sizing: border-box; 
+        }
+        
+        body { 
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; 
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px; 
+        }
+        
+        .container { 
+            max-width: 1200px; 
+            margin: 0 auto; 
+        }
+        
+        .header {
+            text-align: center;
+            color: white;
+            margin-bottom: 30px;
+        }
+        
+        .header h1 {
+            font-size: 28px;
+            margin-bottom: 10px;
+        }
+        
+        .card { 
+            background: white; 
+            border-radius: 16px; 
+            padding: 24px; 
+            margin-bottom: 20px; 
+            box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+        }
+        
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        
+        .stat-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 12px;
+            text-align: center;
+        }
+        
+        .stat-number {
+            font-size: 24px;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        
+        .stat-label {
+            font-size: 14px;
+            opacity: 0.9;
+        }
+        
+        .search-box {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            font-size: 16px;
+            margin-bottom: 20px;
+        }
+        
+        .search-box:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        
+        .table-container {
+            overflow-x: auto;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+        }
+        
+        th, td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+        
+        th {
+            background-color: #f8f9fa;
+            font-weight: 600;
+        }
+        
+        .card-type {
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: bold;
+        }
+        
+        .card-type.barak {
+            background-color: #e3f2fd;
+            color: #1976d2;
+        }
+        
+        .card-type.adi {
+            background-color: #f3e5f5;
+            color: #7b1fa2;
+        }
+        
+        .amount {
+            font-weight: bold;
+            color: #d32f2f;
+        }
+        
+        .pagination {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 10px;
+            margin-top: 20px;
+        }
+        
+        .btn {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        
+        .btn-primary {
+            background: #667eea;
+            color: white;
+        }
+        
+        .btn-secondary {
+            background: #f8f9fa;
+            color: #6c757d;
+        }
+        
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #666;
+        }
+        
+        .error {
+            background: #ffebee;
+            color: #c62828;
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+        
+        .back-link {
+            display: inline-block;
+            color: white;
+            text-decoration: none;
+            margin-bottom: 20px;
+            padding: 8px 16px;
+            background: rgba(255,255,255,0.2);
+            border-radius: 8px;
+        }
+        
+        .back-link:hover {
+            background: rgba(255,255,255,0.3);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <a href="/dashboard" class="back-link">← Back to Dashboard</a>
+        
+        <div class="header">
+            <h1>🗄️ Transaction Database</h1>
+            <p>View and search all processed transactions</p>
+        </div>
+        
+        <div class="stats-grid" id="stats-grid">
+            <div class="loading">Loading statistics...</div>
+        </div>
+        
+        <div class="card">
+            <h3>🔍 Search Transactions</h3>
+            <input type="text" class="search-box" id="search-input" placeholder="Search by payee name...">
+            
+            <div class="table-container">
+                <table id="transactions-table">
+                    <thead>
+                        <tr>
+                            <th>Payee</th>
+                            <th>Date</th>
+                            <th>Amount</th>
+                            <th>Card</th>
+                            <th>Added</th>
+                        </tr>
+                    </thead>
+                    <tbody id="transactions-body">
+                        <tr>
+                            <td colspan="5" class="loading">Loading transactions...</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            
+            <div class="pagination" id="pagination">
+                <!-- Pagination will be inserted here -->
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = window.location.origin;
+        let currentPage = 1;
+        let currentSearch = '';
+        
+        // Load statistics
+        async function loadStats() {
+            try {
+                const response = await fetch(`${API_BASE}/stats`);
+                const data = await response.json();
+                
+                if (data.success) {
+                    displayStats(data.stats);
+                } else {
+                    document.getElementById('stats-grid').innerHTML = 
+                        '<div class="error">Failed to load statistics</div>';
+                }
+            } catch (error) {
+                document.getElementById('stats-grid').innerHTML = 
+                    '<div class="error">Error loading statistics</div>';
+            }
+        }
+        
+        function displayStats(stats) {
+            const statsGrid = document.getElementById('stats-grid');
+            
+            if (stats.length === 0) {
+                statsGrid.innerHTML = '<div class="stat-card"><div class="stat-number">0</div><div class="stat-label">No transactions yet</div></div>';
+                return;
+            }
+            
+            let totalTransactions = 0;
+            let totalAmount = 0;
+            
+            stats.forEach(stat => {
+                totalTransactions += parseInt(stat.total_transactions);
+                totalAmount += parseInt(stat.total_amount);
+            });
+            
+            statsGrid.innerHTML = `
+                <div class="stat-card">
+                    <div class="stat-number">${totalTransactions}</div>
+                    <div class="stat-label">Total Transactions</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number">₪${(totalAmount / 1000).toLocaleString()}</div>
+                    <div class="stat-label">Total Amount</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number">${stats.length}</div>
+                    <div class="stat-label">Credit Cards</div>
+                </div>
+            `;
+        }
+        
+        // Load transactions
+        async function loadTransactions(page = 1, search = '') {
+            try {
+                const url = search 
+                    ? `${API_BASE}/transactions/search?q=${encodeURIComponent(search)}&page=${page}&limit=50`
+                    : `${API_BASE}/transactions?page=${page}&limit=50`;
+                
+                const response = await fetch(url);
+                const data = await response.json();
+                
+                if (data.success) {
+                    displayTransactions(data.transactions);
+                    displayPagination(data.pagination);
+                } else {
+                    document.getElementById('transactions-body').innerHTML = 
+                        '<tr><td colspan="5" class="error">Failed to load transactions</td></tr>';
+                }
+            } catch (error) {
+                document.getElementById('transactions-body').innerHTML = 
+                    '<tr><td colspan="5" class="error">Error loading transactions</td></tr>';
+            }
+        }
+        
+        function displayTransactions(transactions) {
+            const tbody = document.getElementById('transactions-body');
+            
+            if (transactions.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="5" class="loading">No transactions found</td></tr>';
+                return;
+            }
+            
+            tbody.innerHTML = transactions.map(tx => `
+                <tr>
+                    <td>${tx.payee_name}</td>
+                    <td>${new Date(tx.transaction_date).toLocaleDateString()}</td>
+                    <td class="amount">₪${(tx.amount / 1000).toLocaleString()}</td>
+                    <td><span class="card-type ${tx.card_type ? 'adi' : 'barak'}">${tx.card_type ? 'Adi' : 'Barak'}</span></td>
+                    <td>${new Date(tx.created_at).toLocaleString()}</td>
+                </tr>
+            `).join('');
+        }
+        
+        function displayPagination(pagination) {
+            const paginationDiv = document.getElementById('pagination');
+            
+            if (pagination.totalPages <= 1) {
+                paginationDiv.innerHTML = '';
+                return;
+            }
+            
+            let html = '';
+            
+            // Previous button
+            html += `<button class="btn btn-secondary" ${pagination.page === 1 ? 'disabled' : ''} onclick="changePage(${pagination.page - 1})">Previous</button>`;
+            
+            // Page numbers
+            for (let i = Math.max(1, pagination.page - 2); i <= Math.min(pagination.totalPages, pagination.page + 2); i++) {
+                html += `<button class="btn ${i === pagination.page ? 'btn-primary' : 'btn-secondary'}" onclick="changePage(${i})">${i}</button>`;
+            }
+            
+            // Next button
+            html += `<button class="btn btn-secondary" ${pagination.page === pagination.totalPages ? 'disabled' : ''} onclick="changePage(${pagination.page + 1})">Next</button>`;
+            
+            paginationDiv.innerHTML = html;
+        }
+        
+        function changePage(page) {
+            currentPage = page;
+            loadTransactions(page, currentSearch);
+        }
+        
+        // Search functionality
+        document.getElementById('search-input').addEventListener('input', (e) => {
+            currentSearch = e.target.value;
+            currentPage = 1;
+            
+            if (currentSearch.trim()) {
+                loadTransactions(1, currentSearch);
+            } else {
+                loadTransactions(1, '');
+            }
+        });
+        
+        // Initial load
+        loadStats();
+        loadTransactions();
+    </script>
+</body>
+</html>

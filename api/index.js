@@ -1,7 +1,7 @@
 import express from 'express';
 import { mapExpenses } from '../mapper/mapper.js';
 import { downloadExpenses } from '../scraping/getCardData.js';
-import { getTransactionStats } from '../ynabApi/transactions.js';
+import { getTransactionStats, getAllTransactions, searchTransactions } from '../ynabApi/transactions.js';
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
@@ -173,6 +173,52 @@ app.get('/stats', async (req, res) => {
     res.json({
       success: true,
       stats: stats
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+// Get all transactions with pagination
+app.get('/transactions', async (req, res) => {
+  try {
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 50;
+    
+    const result = await getAllTransactions(page, limit);
+    res.json({
+      success: true,
+      ...result
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+// Search transactions
+app.get('/transactions/search', async (req, res) => {
+  try {
+    const query = req.query.q;
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 50;
+    
+    if (!query) {
+      return res.status(400).json({
+        success: false,
+        error: 'Search query is required'
+      });
+    }
+    
+    const result = await searchTransactions(query, page, limit);
+    res.json({
+      success: true,
+      ...result
     });
   } catch (error) {
     res.status(500).json({

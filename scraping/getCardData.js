@@ -44,17 +44,21 @@ export async function downloadExpenses(isAdiCard) {
 
   // Launch browser with more human-like settings
   // Always run headless in Railway/production environment
-  const isProduction = process.env.NODE_ENV === 'production' || process.env.RAILWAY_ENVIRONMENT || process.env.PORT;
+  const isProduction = process.env.NODE_ENV === 'production' || 
+                       process.env.RAILWAY_ENVIRONMENT || 
+                       process.env.PORT;
+  const headlessMode = Boolean(isProduction);
+  
   console.log('🔧 Environment check:', {
     NODE_ENV: process.env.NODE_ENV,
     RAILWAY_ENVIRONMENT: process.env.RAILWAY_ENVIRONMENT,
     PORT: process.env.PORT,
     isProduction: isProduction,
-    headless: isProduction
+    headless: headlessMode
   });
   
   const browser = await chromium.launch({ 
-    headless: isProduction,
+    headless: headlessMode,
     args: [
       '--no-sandbox',
       '--disable-setuid-sandbox',

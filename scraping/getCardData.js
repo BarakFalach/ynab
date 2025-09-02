@@ -43,8 +43,18 @@ export async function downloadExpenses(isAdiCard) {
   const password = process.env.CREDIT_CARD_PASSWORD;
 
   // Launch browser with more human-like settings
+  // Always run headless in Railway/production environment
+  const isProduction = process.env.NODE_ENV === 'production' || process.env.RAILWAY_ENVIRONMENT || process.env.PORT;
+  console.log('🔧 Environment check:', {
+    NODE_ENV: process.env.NODE_ENV,
+    RAILWAY_ENVIRONMENT: process.env.RAILWAY_ENVIRONMENT,
+    PORT: process.env.PORT,
+    isProduction: isProduction,
+    headless: isProduction
+  });
+  
   const browser = await chromium.launch({ 
-    headless: process.env.NODE_ENV === 'production' ? true : false,
+    headless: isProduction,
     args: [
       '--no-sandbox',
       '--disable-setuid-sandbox',
@@ -54,7 +64,10 @@ export async function downloadExpenses(isAdiCard) {
       '--no-zygote',
       '--disable-gpu',
       '--disable-web-security',
-      '--disable-features=VizDisplayCompositor'
+      '--disable-features=VizDisplayCompositor',
+      '--disable-background-timer-throttling',
+      '--disable-backgrounding-occluded-windows',
+      '--disable-renderer-backgrounding'
     ]
   });
   

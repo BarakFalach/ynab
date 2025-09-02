@@ -46,17 +46,13 @@ COPY package.json package-lock.json ./
 RUN npm ci
 
 # Install Playwright browsers
-RUN npx playwright install chromium
-RUN npx playwright install-deps chromium
+RUN npx playwright install chromium --with-deps
 
 # Copy source code
 COPY . .
 
 # Create necessary directories
 RUN mkdir -p downloads logs
-
-# Set environment variables for Playwright
-ENV PLAYWRIGHT_BROWSERS_PATH=/ms-playwright
 
 # Expose port
 EXPOSE 3000

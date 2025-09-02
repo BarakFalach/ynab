@@ -42,10 +42,10 @@ WORKDIR /app
 # Copy package files
 COPY package.json package-lock.json ./
 
-# Install Node.js dependencies
-RUN npm ci --omit=dev
+# Install all dependencies (including dev dependencies for Playwright)
+RUN npm ci
 
-# Install Playwright and browsers
+# Install Playwright browsers
 RUN npx playwright install chromium
 RUN npx playwright install-deps chromium
 
@@ -57,7 +57,6 @@ RUN mkdir -p downloads logs
 
 # Set environment variables for Playwright
 ENV PLAYWRIGHT_BROWSERS_PATH=/ms-playwright
-ENV PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=0
 
 # Expose port
 EXPOSE 3000

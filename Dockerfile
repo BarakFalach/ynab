@@ -46,7 +46,8 @@ COPY package.json package-lock.json ./
 RUN npm ci
 
 # Install Playwright browsers
-RUN npx playwright install chromium --with-deps
+RUN npx playwright install chromium
+RUN npx playwright install-deps chromium
 
 # Copy source code
 COPY . .

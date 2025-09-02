@@ -44,7 +44,7 @@ export async function downloadExpenses(isAdiCard) {
 
   // Launch browser with more human-like settings
   const browser = await chromium.launch({ 
-    headless: false,
+    headless: process.env.NODE_ENV === 'production' ? true : false,
     args: [
       '--no-sandbox',
       '--disable-setuid-sandbox',
@@ -52,7 +52,9 @@ export async function downloadExpenses(isAdiCard) {
       '--disable-accelerated-2d-canvas',
       '--no-first-run',
       '--no-zygote',
-      '--disable-gpu'
+      '--disable-gpu',
+      '--disable-web-security',
+      '--disable-features=VizDisplayCompositor'
     ]
   });
   

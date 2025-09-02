@@ -57,7 +57,7 @@ RUN mkdir -p downloads logs
 
 # Set environment variables for Playwright
 ENV PLAYWRIGHT_BROWSERS_PATH=/ms-playwright
-ENV PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1
+ENV PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=0
 
 # Expose port
 EXPOSE 3000

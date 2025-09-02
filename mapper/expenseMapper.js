@@ -38,6 +38,6 @@ export const mapCardExpenseToYnabExpense = async (
       cleared: 'uncleared',
     };
   } catch (error) {
-    console.log('Error mapping card expense to YNAB expense:', error);
+    
   }
 };

@@ -1,14 +1,24 @@
-// remote-trigger.js
 import express from 'express';
-// const { exec } = require('child_process');
 import { exec } from 'child_process';
+
 const app = express();
 
 app.get('/run-script', (req, res) => {
-  exec('npm start', (error, stdout, stderr) => {
-    if (error) return res.status(500).send(error.message);
-    res.send(stdout || stderr);
+  exec('npm start', { encoding: 'utf8' }, (error, stdout, stderr) => {
+    const output = [
+      '📱 Script triggered via Shortcut',
+      stdout,
+      stderr,
+      error ? `❌ Error: ${error.message}` : '✅ Finished with no errors',
+    ]
+      .filter(Boolean)
+      .join('\n');
+
+    res.setHeader('Content-Type', 'text/plain; charset=utf-8');
+    res.send(output);
   });
 });
 
-app.listen(3000, () => console.log('Trigger server running on http://localhost:3000'));
+app.listen(3000, () => {
+  console.log('🚀 Trigger server running on http://localhost:3000');
+});

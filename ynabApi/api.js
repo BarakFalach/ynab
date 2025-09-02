@@ -8,7 +8,7 @@ export const uploadExpenses = async (expenses) => {
   const accessToken = process.env.YNAB_ACCESS_TOKEN;
 
   if (expenses.length === 0) {
-    console.log('No expenses to upload. after duplicate check');
+    console.log('📭 No expenses to upload');
     return;
   }
 

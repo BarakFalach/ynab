@@ -66,9 +66,9 @@ export const mapExpenses = async (isAdiCard) => {
       const validatedExpenses = validateExpenses(allExpenses);
       const uniqueExpenses = await handleDuplicate(validatedExpenses, isAdiCard);
       await uploadExpenses(uniqueExpenses);
-      console.log('Expenses uploaded successfully.');
+      console.log('✅ Expenses uploaded successfully.');
     } else {
-      console.log('No expenses to upload - after type check');
+      console.log('📭 No expenses to upload - after type check');
     }
   } catch (error) {
     console.error('Error processing expenses:', error);

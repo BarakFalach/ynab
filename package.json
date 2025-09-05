@@ -9,6 +9,7 @@
     "start": "node --no-warnings index.js",
     "server": "node api/index.js",
     "map": "node index.js",
+    "scheduled": "node scripts/scheduled-run.js",
     "barak": "node scraping/getCardData.js",
     "adi": "node scraping/getCardData.js adi",
     "dev": "nodemon api/index.js",

@@ -56,8 +56,9 @@ Once deployed, you'll get a Railway URL like: `https://your-app-name.railway.app
 
 ## ⏰ Scheduling Options
 
-### Option 1: GitHub Actions (Recommended)
+### Option 1: GitHub Actions (Recommended) ✅
 
+**Setup Steps:**
 1. Go to your GitHub repository
 2. Go to **Settings** → **Secrets and variables** → **Actions**
 3. Add the same environment variables as secrets:
@@ -71,9 +72,20 @@ Once deployed, you'll get a Railway URL like: `https://your-app-name.railway.app
 4. The workflow will run daily at 8 AM UTC
 5. You can also trigger it manually from the **Actions** tab
 
+**Files Created:**
+- `.github/workflows/daily-ynab-sync.yml` - GitHub Actions workflow
+- `scripts/scheduled-run.js` - Dedicated script for scheduled runs
+
 ### Option 2: Railway Cron (Alternative)
 
-Railway supports cron jobs, but GitHub Actions is more reliable for this use case.
+If you prefer Railway's built-in cron:
+
+1. Create a separate Railway service using `railway-cron.json`
+2. Set the same environment variables
+3. Railway will run the script daily at 8 AM UTC
+
+**Files Created:**
+- `railway-cron.json` - Railway cron configuration
 
 ## 📱 iPhone Usage
 
@@ -165,11 +177,29 @@ If you need more resources:
 ## 🎉 You're All Set!
 
 Your YNAB automation is now running in the cloud with:
-- ✅ Daily scheduled runs
+- ✅ Daily scheduled runs (GitHub Actions)
 - ✅ iPhone dashboard access
 - ✅ Real-time logging
 - ✅ Manual trigger capability
 - ✅ Full Playwright support
 - ✅ Free hosting (within limits)
+- ✅ Enhanced error handling for scheduled runs
+
+## 🚀 Quick Start for Daily Jobs
+
+1. **Set up GitHub Actions** (recommended):
+   - Add your environment variables as GitHub secrets
+   - Push your code to GitHub
+   - The workflow will automatically run daily at 8 AM UTC
+
+2. **Test the scheduled script locally**:
+   ```bash
+   npm run scheduled
+   ```
+
+3. **Monitor your runs**:
+   - Check GitHub Actions tab for run history
+   - Use your Railway dashboard for manual runs
+   - View logs in both places
 
 Enjoy your automated expense tracking! 🚀

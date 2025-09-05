@@ -134,13 +134,13 @@ export async function downloadExpenses(isAdiCard) {
     await page.waitForSelector('.only-card-wrapper > :first-child', { timeout: 30000 });
     await humanDelay(2000, 3000);
 
-    console.log('👆 Clicking on card...');
-    await page.waitForSelector('span[_ngcontent-my-app-id-c118=""]', { timeout: 30000 });
-    const cardSpan = page.locator('span[_ngcontent-my-app-id-c118=""]');
-    await cardSpan.hover();
-    await humanDelay(500, 1000);
-    await cardSpan.click();
-    await humanDelay(2000, 4000);
+    // console.log('👆 Clicking on card...');
+    // await page.waitForSelector('span[_ngcontent-my-app-id-c126=""]', { timeout: 30000 });
+    // const cardSpan = page.locator('span[_ngcontent-my-app-id-c126=""]');
+    // await cardSpan.hover();
+    // await humanDelay(500, 1000);
+    // await cardSpan.click();
+    // await humanDelay(2000, 4000);
 
     console.log('💳 Selecting credit card...');
     const cardSelector = isAdiCard 

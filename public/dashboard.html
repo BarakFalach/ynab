@@ -19,7 +19,7 @@
         }
         
         .container { 
-            max-width: 400px; 
+            max-width: 500px; 
             margin: 0 auto; 
         }
         
@@ -117,6 +117,88 @@
             transform: translateY(-1px);
         }
         
+        .btn-success {
+            background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%);
+            box-shadow: 0 4px 15px rgba(76, 175, 80, 0.3);
+        }
+        
+        .btn-warning {
+            background: linear-gradient(135deg, #ff9800 0%, #f57c00 100%);
+            box-shadow: 0 4px 15px rgba(255, 152, 0, 0.3);
+        }
+        
+        .file-upload-section {
+            border: 2px dashed #ddd;
+            border-radius: 12px;
+            padding: 20px;
+            text-align: center;
+            margin-bottom: 16px;
+            transition: all 0.3s ease;
+        }
+        
+        .file-upload-section.dragover {
+            border-color: #667eea;
+            background: #f8f9ff;
+        }
+        
+        .file-upload-section h4 {
+            margin-bottom: 12px;
+            color: #333;
+        }
+        
+        .file-input {
+            display: none;
+        }
+        
+        .file-label {
+            display: inline-block;
+            padding: 12px 24px;
+            background: #f8f9fa;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin: 8px;
+        }
+        
+        .file-label:hover {
+            background: #e9ecef;
+            border-color: #667eea;
+        }
+        
+        .file-info {
+            margin-top: 12px;
+            padding: 8px 12px;
+            background: #f8f9fa;
+            border-radius: 6px;
+            font-size: 14px;
+            color: #666;
+        }
+        
+        .card-type-selector {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 16px;
+        }
+        
+        .card-type-btn {
+            flex: 1;
+            padding: 12px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            background: white;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-align: center;
+            font-weight: 600;
+        }
+        
+        .card-type-btn.selected {
+            border-color: #667eea;
+            background: #f8f9ff;
+            color: #667eea;
+        }
+        
         .log-entry { 
             background: #f8f9fa; 
             padding: 12px; 
@@ -178,6 +260,38 @@
             font-size: 14px;
             margin-top: 30px;
         }
+        
+        .tabs {
+            display: flex;
+            margin-bottom: 20px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 12px;
+            padding: 4px;
+        }
+        
+        .tab {
+            flex: 1;
+            padding: 12px;
+            text-align: center;
+            color: white;
+            cursor: pointer;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+            font-weight: 600;
+        }
+        
+        .tab.active {
+            background: white;
+            color: #667eea;
+        }
+        
+        .tab-content {
+            display: none;
+        }
+        
+        .tab-content.active {
+            display: block;
+        }
     </style>
 </head>
 <body>
@@ -187,26 +301,62 @@
             <p>Automated expense tracking from your credit cards</p>
         </div>
         
-        <div class="card">
-            <h3>📊 Status</h3>
-            <div id="status" class="status">
-                <div class="status-dot status-pending" id="status-dot"></div>
-                <span id="status-text">Loading...</span>
-            </div>
-            <div id="last-run" class="last-run-info"></div>
+        <div class="tabs">
+            <div class="tab active" onclick="switchTab('scraping')">🕷️ Auto Scraping</div>
+            <div class="tab" onclick="switchTab('upload')">📁 File Upload</div>
         </div>
         
-        <div class="card">
-            <h3>🚀 Actions</h3>
-            <button class="btn" id="run-btn" onclick="runScript()">
-                <span id="run-text">🚀 Run Script Now</span>
-            </button>
-            <button class="btn btn-secondary" onclick="refreshStatus()">
-                🔄 Refresh Status
-            </button>
-            <a href="/database.html" class="btn btn-secondary" style="text-decoration: none; display: block; text-align: center;">
-                🗄️ View Database
-            </a>
+        <!-- Auto Scraping Tab -->
+        <div id="scraping-tab" class="tab-content active">
+            <div class="card">
+                <h3>📊 Status</h3>
+                <div id="status" class="status">
+                    <div class="status-dot status-pending" id="status-dot"></div>
+                    <span id="status-text">Loading...</span>
+                </div>
+                <div id="last-run" class="last-run-info"></div>
+            </div>
+            
+            <div class="card">
+                <h3>🚀 Actions</h3>
+                <button class="btn" id="run-btn" onclick="runScript()">
+                    <span id="run-text">🚀 Run Script Now</span>
+                </button>
+                <button class="btn btn-secondary" onclick="refreshStatus()">
+                    🔄 Refresh Status
+                </button>
+                <a href="/database.html" class="btn btn-secondary" style="text-decoration: none; display: block; text-align: center;">
+                    🗄️ View Database
+                </a>
+            </div>
+        </div>
+        
+        <!-- File Upload Tab -->
+        <div id="upload-tab" class="tab-content">
+            <div class="card">
+                <h3>📁 Upload CSV Files</h3>
+                <p style="margin-bottom: 16px; color: #666; font-size: 14px;">
+                    Upload CSV files from your credit card and process them directly without scraping.
+                </p>
+                
+                <div class="file-upload-section" id="file-upload-section">
+                    <h4>📄 Barak's Card</h4>
+                    <input type="file" id="barak-file" class="file-input" accept=".csv,.xlsx" onchange="handleFileSelect('barak', this)">
+                    <label for="barak-file" class="file-label">Choose Barak's CSV File</label>
+                    <div id="barak-file-info" class="file-info" style="display: none;"></div>
+                </div>
+                
+                <div class="file-upload-section" id="file-upload-section-adi">
+                    <h4>📄 Adi's Card</h4>
+                    <input type="file" id="adi-file" class="file-input" accept=".csv,.xlsx" onchange="handleFileSelect('adi', this)">
+                    <label for="adi-file" class="file-label">Choose Adi's CSV File</label>
+                    <div id="adi-file-info" class="file-info" style="display: none;"></div>
+                </div>
+                
+                <button class="btn btn-success" id="process-btn" onclick="processUploadedFiles()" disabled>
+                    <span id="process-text">🔄 Process Files</span>
+                </button>
+            </div>
         </div>
         
         <div class="card">
@@ -227,6 +377,91 @@
     <script>
         const API_BASE = window.location.origin;
         let isRunning = false;
+        let uploadedFiles = {
+            barak: null,
+            adi: null
+        };
+        
+        function switchTab(tabName) {
+            // Update tab buttons
+            document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
+            event.target.classList.add('active');
+            
+            // Update tab content
+            document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+            document.getElementById(tabName + '-tab').classList.add('active');
+        }
+        
+        function handleFileSelect(cardType, input) {
+            const file = input.files[0];
+            if (file) {
+                uploadedFiles[cardType] = file;
+                const fileInfo = document.getElementById(cardType + '-file-info');
+                fileInfo.style.display = 'block';
+                fileInfo.innerHTML = `
+                    <strong>Selected:</strong> ${file.name}<br>
+                    <strong>Size:</strong> ${(file.size / 1024).toFixed(1)} KB<br>
+                    <strong>Type:</strong> ${file.type || 'Unknown'}
+                `;
+                updateProcessButton();
+            }
+        }
+        
+        function updateProcessButton() {
+            const processBtn = document.getElementById('process-btn');
+            const hasFiles = uploadedFiles.barak || uploadedFiles.adi;
+            processBtn.disabled = !hasFiles || isRunning;
+        }
+        
+        async function processUploadedFiles() {
+            if (isRunning || (!uploadedFiles.barak && !uploadedFiles.adi)) return;
+            
+            const btn = document.getElementById('process-btn');
+            const processText = document.getElementById('process-text');
+            
+            isRunning = true;
+            btn.disabled = true;
+            processText.innerHTML = '<span class="loading"></span> Processing...';
+            
+            try {
+                const formData = new FormData();
+                
+                if (uploadedFiles.barak) {
+                    formData.append('barakFile', uploadedFiles.barak);
+                }
+                if (uploadedFiles.adi) {
+                    formData.append('adiFile', uploadedFiles.adi);
+                }
+                
+                const response = await fetch(`${API_BASE}/process-files`, {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    showNotification('✅ Files processed successfully!', 'success');
+                    // Clear uploaded files
+                    uploadedFiles = { barak: null, adi: null };
+                    document.getElementById('barak-file').value = '';
+                    document.getElementById('adi-file').value = '';
+                    document.getElementById('barak-file-info').style.display = 'none';
+                    document.getElementById('adi-file-info').style.display = 'none';
+                    updateProcessButton();
+                } else {
+                    showNotification(`❌ Processing failed: ${data.message}`, 'error');
+                }
+            } catch (error) {
+                showNotification(`❌ Error: ${error.message}`, 'error');
+            } finally {
+                isRunning = false;
+                btn.disabled = false;
+                processText.textContent = '🔄 Process Files';
+                updateProcessButton();
+                refreshStatus();
+            }
+        }
         
         async function fetchStatus() {
             try {

@@ -2,6 +2,7 @@ import express from 'express';
 import { mapExpenses } from '../mapper/mapper.js';
 import { downloadExpenses } from '../scraping/getCardData.js';
 import { getTransactionStats, getAllTransactions, searchTransactions } from '../ynabApi/transactions.js';
+import { upload, processUploadedFiles } from './fileProcessor.js';
 import { Pool } from 'pg';
 import fs from 'fs';
 import path from 'path';
@@ -156,7 +157,8 @@ app.get('/', (req, res) => {
       status: '/status',
       logs: '/logs',
       health: '/health',
-      dashboard: '/dashboard'
+      dashboard: '/dashboard',
+      processFiles: '/process-files'
     }
   });
 });
@@ -175,6 +177,24 @@ app.get('/run-script', async (req, res) => {
       message: 'Script failed',
       error: error.message,
       status: lastRunStatus
+    });
+  }
+});
+
+// File upload endpoint
+app.post('/process-files', upload.fields([
+  { name: 'barakFile', maxCount: 1 },
+  { name: 'adiFile', maxCount: 1 }
+]), async (req, res) => {
+  try {
+    log('📁 Processing uploaded files', 'info');
+    await processUploadedFiles(req, res);
+  } catch (error) {
+    log(`❌ File processing error: ${error.message}`, 'error');
+    res.status(500).json({
+      success: false,
+      message: 'File processing failed',
+      error: error.message
     });
   }
 });

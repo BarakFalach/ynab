@@ -2,8 +2,8 @@ name: Daily YNAB Sync
 
 on:
   schedule:
-    # Run daily at 8:00 AM UTC (adjust timezone as needed)
-    - cron: '0 8 * * *'
+    - cron: '0 2 * * *'
+    - cron: '0 16 * * *'
   workflow_dispatch: # Allow manual triggering
 
 jobs:

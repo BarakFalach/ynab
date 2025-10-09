@@ -34,7 +34,8 @@ jobs:
           BUDGET_ID: ${{ secrets.BUDGET_ID }}
           BARAK_CARD: ${{ secrets.BARAK_CARD }}
           ADI_CARD: ${{ secrets.ADI_CARD }}
-          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
           NODE_ENV: production
         run: npm run scheduled
         

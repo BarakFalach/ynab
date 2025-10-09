@@ -95,7 +95,7 @@ export async function downloadExpenses(isAdiCard) {
 
   try {
     console.log('🌐 Navigating to login page...');
-    await page.goto('https://www.max.co.il/login', { waitUntil: 'networkidle' });
+    await page.goto('https://www.max.co.il/login');
     await humanDelay(2000, 4000);
 
     console.log('🔍 Looking for login form...');

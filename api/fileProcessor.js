@@ -6,7 +6,7 @@ import { fileURLToPath } from 'url';
 import { mapCardExpenseToYnabExpense } from '../mapper/expenseMapper.js';
 import { validateExpenses } from '../ynabApi/validator.js';
 import { uploadExpenses } from '../ynabApi/api.js';
-import { handleDuplicate } from '../ynabApi/transactions.js';
+import { handleDuplicate } from '../supabase/transactions.js';
 import dotenv from 'dotenv';
 
 dotenv.config();

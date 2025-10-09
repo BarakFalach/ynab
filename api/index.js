@@ -1,9 +1,9 @@
 import express from 'express';
 import { mapExpenses } from '../mapper/mapper.js';
 import { downloadExpenses } from '../scraping/getCardData.js';
-import { getTransactionStats, getAllTransactions, searchTransactions } from '../ynabApi/transactions.js';
+import { getTransactionStats, getAllTransactions, searchTransactions } from '../supabase/transactions.js';
 import { upload, processUploadedFiles } from './fileProcessor.js';
-import { Pool } from 'pg';
+// Removed pg import - now using Supabase
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
@@ -46,54 +46,29 @@ const log = (message, type = 'info') => {
   }
 };
 
-// Database initialization
+// Database initialization using Supabase
 const initializeDatabase = async () => {
   try {
-    console.log('🔧 Initializing database...');
-    console.log('🔧 DATABASE_URL exists:', !!process.env.DATABASE_URL);
-    console.log('🔧 NODE_ENV:', process.env.NODE_ENV);
-    console.log('🔧 RAILWAY_ENVIRONMENT:', process.env.RAILWAY_ENVIRONMENT);
+    console.log('🔧 Initializing Supabase database...');
+    console.log('🔧 SUPABASE_URL exists:', !!process.env.SUPABASE_URL);
+    console.log('🔧 SUPABASE_ANON_KEY exists:', !!process.env.SUPABASE_ANON_KEY);
     
-    const connectionString = process.env.DATABASE_URL;
-    if (!connectionString) {
-      throw new Error('DATABASE_URL environment variable is required');
+    if (!process.env.SUPABASE_URL || !process.env.SUPABASE_ANON_KEY) {
+      throw new Error('SUPABASE_URL and SUPABASE_ANON_KEY environment variables are required');
     }
     
-    const isProduction = process.env.NODE_ENV === 'production' || process.env.RAILWAY_ENVIRONMENT;
-    const pool = new Pool({
-      connectionString,
-      ssl: isProduction ? { rejectUnauthorized: false } : false
-    });
+    // Import the Supabase initialization function
+    const { initializeDatabase: initSupabase } = await import('../supabase/transactions.js');
+    const success = await initSupabase();
     
-    // Test connection first
-    const client = await pool.connect();
-    console.log('✅ Database connection successful');
-    client.release();
+    if (!success) {
+      throw new Error('Failed to initialize Supabase database');
+    }
     
-    await pool.query(`
-      CREATE TABLE IF NOT EXISTS transaction_logs (
-        id SERIAL PRIMARY KEY,
-        transaction_key VARCHAR(500) UNIQUE NOT NULL,
-        payee_name VARCHAR(255) NOT NULL,
-        transaction_date DATE NOT NULL,
-        amount INTEGER NOT NULL,
-        card_type BOOLEAN NOT NULL,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-      )
-    `);
-    
-    // Create index for faster lookups
-    await pool.query(`
-      CREATE INDEX IF NOT EXISTS idx_transaction_key 
-      ON transaction_logs(transaction_key)
-    `);
-    
-    console.log('✅ Database initialized successfully');
-    await pool.end();
+    console.log('✅ Supabase database initialized successfully');
   } catch (error) {
     console.error('❌ Database initialization failed:', error);
     console.error('❌ Error details:', error.message);
-    console.error('❌ Error code:', error.code);
     throw error;
   }
 };

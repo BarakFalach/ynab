@@ -6,7 +6,7 @@ import { fileURLToPath } from 'url';
 import { mapCardExpenseToYnabExpense } from '../mapper/expenseMapper.js';
 import { validateExpenses } from '../ynabApi/validator.js';
 import { uploadExpenses } from '../ynabApi/api.js';
-import { handleDuplicate } from '../supabase/transactions.js';
+import { handleDuplicate, saveTransactionsAfterUpload } from '../supabase/transactions.js';
 import dotenv from 'dotenv';
 
 dotenv.config();
@@ -114,7 +114,18 @@ const processFile = async (filePath, isAdiCard) => {
 
 export const processUploadedFiles = async (req, res) => {
   try {
-    console.log('📁 Processing uploaded files...');
+    // Check for skipDuplicateCheck query parameter
+    const skipDuplicateCheck = 
+      req.query?.skipDuplicateCheck === 'true' || 
+      req.query?.skipDuplicateCheck === '1' ||
+      req.query?.skipDuplicateCheck === true ||
+      (typeof req.query?.skipDuplicateCheck === 'string' && req.query.skipDuplicateCheck.toLowerCase() === 'true');
+    
+    if (skipDuplicateCheck) {
+      console.log('⚠️ Processing files with duplicate check and DB save disabled');
+    } else {
+      console.log('📁 Processing uploaded files...');
+    }
     
     const results = {
       barak: { processed: 0, uploaded: 0 },
@@ -130,10 +141,27 @@ export const processUploadedFiles = async (req, res) => {
       
       if (barakExpenses.length > 0) {
         const validatedExpenses = validateExpenses(barakExpenses);
-        const uniqueExpenses = await handleDuplicate(validatedExpenses, false);
-        await uploadExpenses(uniqueExpenses);
-        results.barak.uploaded = uniqueExpenses.length;
-        console.log(`✅ Barak: ${uniqueExpenses.length} expenses uploaded`);
+        
+        let expensesToUpload;
+        if (skipDuplicateCheck) {
+          console.log('⚠️ Skipping duplicate check for Barak\'s expenses');
+          expensesToUpload = validatedExpenses;
+        } else {
+          expensesToUpload = await handleDuplicate(validatedExpenses, false);
+        }
+        
+        const uploadResult = await uploadExpenses(expensesToUpload);
+        
+        if (!skipDuplicateCheck && uploadResult.success && uploadResult.uploaded > 0) {
+          await saveTransactionsAfterUpload(expensesToUpload, false);
+          results.barak.uploaded = expensesToUpload.length;
+          console.log(`✅ Barak: ${expensesToUpload.length} expenses uploaded and saved`);
+        } else if (skipDuplicateCheck) {
+          results.barak.uploaded = expensesToUpload.length;
+          console.log(`✅ Barak: ${expensesToUpload.length} expenses uploaded (duplicate check & DB save skipped)`);
+        } else {
+          console.log(`⚠️ Barak: Upload completed but some may have failed`);
+        }
       }
     }
 
@@ -146,10 +174,27 @@ export const processUploadedFiles = async (req, res) => {
       
       if (adiExpenses.length > 0) {
         const validatedExpenses = validateExpenses(adiExpenses);
-        const uniqueExpenses = await handleDuplicate(validatedExpenses, true);
-        await uploadExpenses(uniqueExpenses);
-        results.adi.uploaded = uniqueExpenses.length;
-        console.log(`✅ Adi: ${uniqueExpenses.length} expenses uploaded`);
+        
+        let expensesToUpload;
+        if (skipDuplicateCheck) {
+          console.log('⚠️ Skipping duplicate check for Adi\'s expenses');
+          expensesToUpload = validatedExpenses;
+        } else {
+          expensesToUpload = await handleDuplicate(validatedExpenses, true);
+        }
+        
+        const uploadResult = await uploadExpenses(expensesToUpload);
+        
+        if (!skipDuplicateCheck && uploadResult.success && uploadResult.uploaded > 0) {
+          await saveTransactionsAfterUpload(expensesToUpload, true);
+          results.adi.uploaded = expensesToUpload.length;
+          console.log(`✅ Adi: ${expensesToUpload.length} expenses uploaded and saved`);
+        } else if (skipDuplicateCheck) {
+          results.adi.uploaded = expensesToUpload.length;
+          console.log(`✅ Adi: ${expensesToUpload.length} expenses uploaded (duplicate check & DB save skipped)`);
+        } else {
+          console.log(`⚠️ Adi: Upload completed but some may have failed`);
+        }
       }
     }
 

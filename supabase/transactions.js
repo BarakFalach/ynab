@@ -27,8 +27,6 @@ export const transactionExists = async (transactionKey) => {
 // Insert transaction
 export const insertTransaction = async (transactionData) => {
   try {
-    console.log('🔍 Inserting transaction data:', JSON.stringify(transactionData, null, 2));
-    
     const { data, error } = await supabase
       .from('transaction_logs')
       .insert([transactionData])
@@ -36,15 +34,12 @@ export const insertTransaction = async (transactionData) => {
 
     if (error) {
       console.error('❌ Error inserting transaction:', error);
-      console.error('❌ Error details:', JSON.stringify(error, null, 2));
       return false;
     }
 
-    console.log('✅ Transaction inserted successfully:', data[0]);
     return data[0];
   } catch (error) {
     console.error('❌ Error inserting transaction:', error);
-    console.error('❌ Error stack:', error.stack);
     return false;
   }
 };
@@ -86,22 +81,7 @@ export const handleDuplicate = async (expenses, isAdiCard) => {
       const exists = await transactionExists(transactionKey);
       if (!exists) {
         uniqueExpenses.push(expense);
-        
-        // Add to database to prevent future duplicates
-        console.log(`💾 Adding transaction to database: ${transactionKey}`);
-        const insertResult = await insertTransaction({
-          transaction_key: transactionKey,
-          payee_name: expense.payee_name,
-          transaction_date: expense.date,
-          amount: expense.amount,
-          card_type: isAdiCard
-        });
-        
-        if (!insertResult) {
-          console.error(`❌ Failed to insert transaction: ${transactionKey}`);
-        } else {
-          console.log(`✅ Successfully inserted transaction: ${transactionKey}`);
-        }
+        // Don't save here - wait for successful YNAB upload
       } else {
         duplicateCount++;
         console.log(`⚠️ Duplicate found: ${expense.payee_name} - ${expense.date}`);
@@ -113,6 +93,49 @@ export const handleDuplicate = async (expenses, isAdiCard) => {
   } catch (error) {
     console.error('❌ Error handling duplicates:', error);
     return expenses; // Return original expenses if error
+  }
+};
+
+// Save transactions to database after successful YNAB upload
+export const saveTransactionsAfterUpload = async (expenses, isAdiCard) => {
+  try {
+    console.log(`💾 Saving ${expenses.length} transactions to database after successful YNAB upload...`);
+    
+    const transactionsToSave = expenses.map(expense => ({
+      transaction_key: `${expense.payee_name}-${expense.date}-${expense.amount}-${isAdiCard}`,
+      payee_name: expense.payee_name,
+      transaction_date: expense.date,
+      amount: expense.amount,
+      card_type: isAdiCard
+    }));
+
+    // Insert in batches to avoid overwhelming Supabase
+    const batchSize = 50;
+    let savedCount = 0;
+    
+    for (let i = 0; i < transactionsToSave.length; i += batchSize) {
+      const batch = transactionsToSave.slice(i, i + batchSize);
+      
+      const { data, error } = await supabase
+        .from('transaction_logs')
+        .insert(batch)
+        .select();
+
+      if (error) {
+        console.error(`❌ Error saving batch ${Math.floor(i/batchSize) + 1}:`, error);
+        // Continue with next batch even if one fails
+        continue;
+      }
+
+      savedCount += data.length;
+      console.log(`✅ Saved batch ${Math.floor(i/batchSize) + 1}/${Math.ceil(transactionsToSave.length/batchSize)}`);
+    }
+
+    console.log(`✅ Successfully saved ${savedCount}/${transactionsToSave.length} transactions to database`);
+    return savedCount === transactionsToSave.length;
+  } catch (error) {
+    console.error('❌ Error saving transactions after upload:', error);
+    return false;
   }
 };
 

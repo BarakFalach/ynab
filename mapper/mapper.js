@@ -4,7 +4,7 @@ import { fileURLToPath } from 'url';
 import { mapCardExpenseToYnabExpense } from './expenseMapper.js';
 import { validateExpenses } from '../ynabApi/validator.js';
 import { uploadExpenses } from '../ynabApi/api.js';
-import { handleDuplicate } from '../supabase/transactions.js';
+import { handleDuplicate, saveTransactionsAfterUpload } from '../supabase/transactions.js';
 import dotenv from 'dotenv';
 
 dotenv.config();
@@ -50,7 +50,7 @@ const processSheet = async (worksheet, isAdiCard) => {
   return expenses;
 };
 
-export const mapExpenses = async (isAdiCard) => {
+export const mapExpenses = async (isAdiCard, skipDuplicateCheck = false) => {
   try {
     const FILE_PATH = path.resolve(__dirname, isAdiCard ? '../downloads/expenses2.xlsx' : '../downloads/expenses1.xlsx');
     const workbook = XLSX.readFile(FILE_PATH);
@@ -64,9 +64,27 @@ export const mapExpenses = async (isAdiCard) => {
 
     if (allExpenses.length) {
       const validatedExpenses = validateExpenses(allExpenses);
-      const uniqueExpenses = await handleDuplicate(validatedExpenses, isAdiCard);
-      await uploadExpenses(uniqueExpenses);
-      console.log('✅ Expenses uploaded successfully.');
+      
+      let expensesToUpload;
+      if (skipDuplicateCheck) {
+        console.log('⚠️ Skipping duplicate check - uploading all expenses');
+        expensesToUpload = validatedExpenses;
+      } else {
+        expensesToUpload = await handleDuplicate(validatedExpenses, isAdiCard);
+      }
+      
+      // Upload to YNAB first
+      const uploadResult = await uploadExpenses(expensesToUpload);
+      
+      // Only save to database if upload was successful and duplicate check was not skipped
+      if (!skipDuplicateCheck && uploadResult.success && uploadResult.uploaded > 0) {
+        await saveTransactionsAfterUpload(expensesToUpload, isAdiCard);
+        console.log('✅ Expenses uploaded successfully and saved to database.');
+      } else if (skipDuplicateCheck) {
+        console.log('✅ Expenses uploaded successfully (duplicate check and DB save skipped).');
+      } else {
+        console.log('⚠️ Expenses uploaded but some may have failed. Database not updated.');
+      }
     } else {
       console.log('📭 No expenses to upload - after type check');
     }

@@ -77,20 +77,26 @@ const initializeDatabase = async () => {
 let lastRunStatus = null;
 
 // Main script execution
-const runScript = async () => {
+const runScript = async (skipDuplicateCheck = false) => {
   log('🚀 Starting YNAB automation script', 'info');
+  if (skipDuplicateCheck) {
+    log('⚠️ Running with duplicate check and DB save disabled', 'info');
+  }
   lastRunStatus = { status: 'running', startTime: new Date().toISOString() };
   
   try {
-    // Initialize database first
-    await initializeDatabase();
+    // Initialize database first (only if not skipping duplicate check)
+    if (!skipDuplicateCheck) {
+      await initializeDatabase();
+    }
+    
     // Download and process Barak's card
     log('📥 Downloading expenses for Barak', 'info');
     await downloadExpenses(false);
     log('✅ Barak expenses downloaded', 'success');
     
     log('🔄 Processing Barak expenses', 'info');
-    await mapExpenses(false);
+    await mapExpenses(false, skipDuplicateCheck);
     log('✅ Barak expenses processed and uploaded', 'success');
     
     // Download and process Adi's card
@@ -99,14 +105,16 @@ const runScript = async () => {
     log('✅ Adi expenses downloaded', 'success');
     
     log('🔄 Processing Adi expenses', 'info');
-    await mapExpenses(true);
+    await mapExpenses(true, skipDuplicateCheck);
     log('✅ Adi expenses processed and uploaded', 'success');
     
     lastRunStatus = { 
       status: 'success', 
       startTime: lastRunStatus.startTime,
       endTime: new Date().toISOString(),
-      message: 'All expenses processed successfully'
+      message: skipDuplicateCheck 
+        ? 'All expenses processed successfully (duplicate check skipped)'
+        : 'All expenses processed successfully'
     };
     log('🎉 Script completed successfully', 'success');
     
@@ -127,24 +135,29 @@ app.get('/', (req, res) => {
   res.json({
     message: 'YNAB Automation API',
     status: 'running',
-    endpoints: {
-      run: '/run-script',
-      status: '/status',
-      logs: '/logs',
-      health: '/health',
-      dashboard: '/dashboard',
-      processFiles: '/process-files'
-    }
+      endpoints: {
+        run: '/run-script?skipDuplicateCheck=true (optional)',
+        status: '/status',
+        logs: '/logs',
+        health: '/health',
+        dashboard: '/dashboard',
+        processFiles: '/process-files'
+      }
   });
 });
 
 app.get('/run-script', async (req, res) => {
   try {
-    await runScript();
+    // Check for skipDuplicateCheck query parameter
+    const skipDuplicateCheck = req.query.skipDuplicateCheck === 'true' || req.query.skipDuplicateCheck === '1';
+    await runScript(skipDuplicateCheck);
     res.json({
       success: true,
-      message: 'Script completed successfully',
-      status: lastRunStatus
+      message: skipDuplicateCheck 
+        ? 'Script completed successfully (duplicate check and DB save skipped)'
+        : 'Script completed successfully',
+      status: lastRunStatus,
+      skipDuplicateCheck: skipDuplicateCheck
     });
   } catch (error) {
     res.status(500).json({

@@ -1,5 +1,90 @@
 [
   {
+    "timestamp": "2025-11-03T20:38:17.095Z",
+    "type": "info",
+    "message": "📁 Processing uploaded files"
+  },
+  {
+    "timestamp": "2025-11-03T20:37:52.252Z",
+    "type": "success",
+    "message": "🎉 Script completed successfully"
+  },
+  {
+    "timestamp": "2025-11-03T20:37:52.249Z",
+    "type": "success",
+    "message": "✅ Adi expenses processed and uploaded"
+  },
+  {
+    "timestamp": "2025-11-03T20:37:51.108Z",
+    "type": "info",
+    "message": "🔄 Processing Adi expenses"
+  },
+  {
+    "timestamp": "2025-11-03T20:37:51.108Z",
+    "type": "success",
+    "message": "✅ Adi expenses downloaded"
+  },
+  {
+    "timestamp": "2025-11-03T20:37:20.647Z",
+    "type": "info",
+    "message": "📥 Downloading expenses for Adi"
+  },
+  {
+    "timestamp": "2025-11-03T20:37:20.646Z",
+    "type": "success",
+    "message": "✅ Barak expenses processed and uploaded"
+  },
+  {
+    "timestamp": "2025-11-03T20:37:18.219Z",
+    "type": "info",
+    "message": "🔄 Processing Barak expenses"
+  },
+  {
+    "timestamp": "2025-11-03T20:37:18.219Z",
+    "type": "success",
+    "message": "✅ Barak expenses downloaded"
+  },
+  {
+    "timestamp": "2025-11-03T20:36:43.789Z",
+    "type": "info",
+    "message": "📥 Downloading expenses for Barak"
+  },
+  {
+    "timestamp": "2025-11-03T20:36:42.768Z",
+    "type": "info",
+    "message": "🚀 Starting YNAB automation script"
+  },
+  {
+    "timestamp": "2025-11-03T20:10:05.899Z",
+    "type": "info",
+    "message": "📁 Processing uploaded files"
+  },
+  {
+    "timestamp": "2025-11-03T20:09:46.323Z",
+    "type": "info",
+    "message": "Server started on port 3000"
+  },
+  {
+    "timestamp": "2025-11-03T20:07:20.877Z",
+    "type": "info",
+    "message": "📁 Processing uploaded files"
+  },
+  {
+    "timestamp": "2025-11-03T20:06:53.527Z",
+    "type": "info",
+    "message": "📁 Processing uploaded files"
+  },
+  {
+    "timestamp": "2025-11-03T20:05:19.752Z",
+    "type": "info",
+    "message": "📁 Processing uploaded files"
+  },
+  {
+    "timestamp": "2025-11-03T20:01:02.713Z",
+    "type": "info",
+    "message": "Server started on port 3000"
+  },
+  {
     "timestamp": "2025-10-09T05:18:51.314Z",
     "type": "info",
     "message": "Server started on port 3000"

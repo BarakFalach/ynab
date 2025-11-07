@@ -1,6 +1,12 @@
+// UUID validation regex
+const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
 export const validateExpense = (expense) => {
   if (!expense.account_id || typeof expense.account_id !== 'string') {
     return { valid: false, message: 'Missing or invalid account_id' };
+  }
+  if (!UUID_REGEX.test(expense.account_id)) {
+    return { valid: false, message: `account_id must be a valid UUID format. Got: ${expense.account_id}` };
   }
   if (!expense.date || !/^\d{4}-\d{2}-\d{2}$/.test(expense.date)) {
     return { valid: false, message: 'Missing or invalid date format (YYYY-MM-DD)' };

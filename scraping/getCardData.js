@@ -99,11 +99,11 @@ export async function downloadExpenses(isAdiCard) {
     await humanDelay(2000, 4000);
 
     console.log('🔍 Looking for login form...');
-    await page.waitForSelector('span[_ngcontent-my-app-id-c168=""]', { timeout: 30000 });
+    await page.waitForSelector('span[_ngcontent-my-app-id-c171=""]', { timeout: 30000 });
     await humanDelay(1000, 2000);
 
     console.log('👆 Clicking password tab...');
-    const passwordTab = page.locator('span[_ngcontent-my-app-id-c168=""]').nth(1);
+    const passwordTab = page.locator('span[_ngcontent-my-app-id-c171=""]').nth(1);
     await passwordTab.hover();
     await humanDelay(500, 1000);
     await passwordTab.click();
@@ -124,7 +124,7 @@ export async function downloadExpenses(isAdiCard) {
     await humanDelay(1000, 2000);
 
     console.log('🚀 Clicking login button...');
-    const loginButton = page.locator('button[_ngcontent-my-app-id-c163=""]');
+    const loginButton = page.locator('button[_ngcontent-my-app-id-c166=""]');
     await loginButton.hover();
     await humanDelay(500, 1000);
     await loginButton.click();
@@ -144,8 +144,8 @@ export async function downloadExpenses(isAdiCard) {
 
     console.log('💳 Selecting credit card...');
     const cardSelector = isAdiCard 
-      ? 'div.card.card-box.card-box-url.ng-star-inserted[_ngcontent-my-app-id-c126][appgtm]:nth-child(3)'
-      : 'div.card.card-box.card-box-url.ng-star-inserted[_ngcontent-my-app-id-c126][appgtm]:nth-child(1)';
+      ? 'div.card.card-box.card-box-url.ng-star-inserted[_ngcontent-my-app-id-c129][appgtm]:nth-child(3)'
+      : 'div.card.card-box.card-box-url.ng-star-inserted[_ngcontent-my-app-id-c129][appgtm]:nth-child(1)';
     
     const cardElement = page.locator(cardSelector);
     await cardElement.hover();

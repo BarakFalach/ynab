@@ -101,13 +101,21 @@ export const saveTransactionsAfterUpload = async (expenses, isAdiCard) => {
   try {
     console.log(`💾 Saving ${expenses.length} transactions to database after successful YNAB upload...`);
     
-    const transactionsToSave = expenses.map(expense => ({
-      transaction_key: `${expense.payee_name}-${expense.date}-${expense.amount}-${isAdiCard}`,
-      payee_name: expense.payee_name,
-      transaction_date: expense.date,
-      amount: expense.amount,
-      card_type: isAdiCard
-    }));
+    const transactionsMap = new Map();
+    for (const expense of expenses) {
+      const key = `${expense.payee_name}-${expense.date}-${expense.amount}-${isAdiCard}`;
+      // Use Map to deduplicate - keeps only one entry per transaction_key
+      transactionsMap.set(key, {
+        transaction_key: key,
+        payee_name: expense.payee_name,
+        transaction_date: expense.date,
+        amount: expense.amount,
+        card_type: isAdiCard
+      });
+    }
+    
+    const transactionsToSave = Array.from(transactionsMap.values());
+    console.log(`📊 Deduplicated: ${expenses.length} → ${transactionsToSave.length} unique transactions`);
 
     // Insert in batches to avoid overwhelming Supabase
     const batchSize = 50;
@@ -118,7 +126,7 @@ export const saveTransactionsAfterUpload = async (expenses, isAdiCard) => {
       
       const { data, error } = await supabase
         .from('transaction_logs')
-        .insert(batch)
+        .upsert(batch, { onConflict: 'transaction_key' })
         .select();
 
       if (error) {

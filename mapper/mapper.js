@@ -28,6 +28,18 @@ const extractRowData = (headers, row) => {
   }, {});
 };
 
+const SUMMARY_KEYWORDS = ['סך הכל', 'סה"כ', 'סהכ'];
+const CURRENCY_PATTERN = /^[\d,.]+₪$/;
+
+const isSkippableRow = (date, amount) => {
+  if (date == null && amount == null) return true;
+  if (typeof date === 'string') {
+    if (SUMMARY_KEYWORDS.some((kw) => date.includes(kw))) return true;
+    if (CURRENCY_PATTERN.test(date)) return true;
+  }
+  return false;
+};
+
 const processSheet = async (worksheet, isAdiCard) => {
   const jsonData = XLSX.utils.sheet_to_json(worksheet, {
     range: 3,
@@ -42,8 +54,11 @@ const processSheet = async (worksheet, isAdiCard) => {
   for (const row of jsonData.slice(1)) {
     const rowData = extractRowData(headers, row);
     const { 'תאריך עסקה': date, 'שם בית העסק': payee, 'קטגוריה': category, 'סכום חיוב': amount, 'סכום עסקה מקורי': notFinalAmount } = rowData;
+
+    if (isSkippableRow(date, amount ?? notFinalAmount)) continue;
+
     const expense = await mapCardExpenseToYnabExpense({
-      date, payee_name: payee, cardCategory: category, amount :amount ?? notFinalAmount, memo: notFinalAmount}, isAdiCard);
+      date, payee_name: payee, cardCategory: category, amount: amount ?? notFinalAmount, memo: notFinalAmount}, isAdiCard);
     if (expense) expenses.push(expense);
   }
 

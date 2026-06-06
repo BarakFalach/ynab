@@ -1,5 +1,35 @@
 [
   {
+    "timestamp": "2026-06-06T12:39:26.269Z",
+    "type": "error",
+    "message": "❌ Script failed: browserType.launch: Executable doesn't exist at /Users/barakf/Library/Caches/ms-playwright/chromium_headless_shell-1155/chrome-mac/headless_shell\n╔═════════════════════════════════════════════════════════════════════════╗\n║ Looks like Playwright Test or Playwright was just installed or updated. ║\n║ Please run the following command to download new browsers:              ║\n║                                                                         ║\n║     npx playwright install                                              ║\n║                                                                         ║\n║ <3 Playwright Team                                                      ║\n╚═════════════════════════════════════════════════════════════════════════╝"
+  },
+  {
+    "timestamp": "2026-06-06T12:39:26.258Z",
+    "type": "info",
+    "message": "📥 Downloading expenses for Barak"
+  },
+  {
+    "timestamp": "2026-06-06T12:39:25.816Z",
+    "type": "info",
+    "message": "🚀 Starting YNAB automation script"
+  },
+  {
+    "timestamp": "2026-06-06T11:47:24.621Z",
+    "type": "info",
+    "message": "📁 Processing uploaded files"
+  },
+  {
+    "timestamp": "2026-06-06T11:28:37.978Z",
+    "type": "info",
+    "message": "📁 Processing uploaded files"
+  },
+  {
+    "timestamp": "2026-06-06T11:25:40.673Z",
+    "type": "info",
+    "message": "Server started on port 3000"
+  },
+  {
     "timestamp": "2025-11-03T20:38:17.095Z",
     "type": "info",
     "message": "📁 Processing uploaded files"

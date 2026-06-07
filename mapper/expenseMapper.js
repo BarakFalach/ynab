@@ -19,7 +19,7 @@ export const mapCardExpenseToYnabExpense = async (
   payee_name,
   cardCategory,
   amount,
-  memo}, isAdiCard
+  memo}, isAdiCard, overridesMap = null
 ) => {
   try {
     const account_id = isAdiCard ? process.env.ADI_CARD : process.env.BARAK_CARD;
@@ -37,18 +37,25 @@ export const mapCardExpenseToYnabExpense = async (
       return null;
     }
     
-    const categoriesMapper = readJSONFile('./mapper/CategoriesMapper.json');
-    const category_id =
-      categoriesMapper.find((category) => category.CardName === cardCategory)?.id ?? null;
     const ynabDate = formatDateForYNAB(date);
-  
+
     // Skip expenses with invalid dates
     if (!ynabDate) {
       console.warn(`⚠️ Skipping expense with invalid date: ${date} for payee: ${payee_name}`);
       return null;
     }
-  
+
     const nameWithOutSlash = payee_name?.replace(/[\\/]/g, '') ?? '';
+
+    // Category precedence: payee override > CategoriesMapper.json (by card category) > null.
+    // The override map is keyed on the normalized payee name (nameWithOutSlash), which
+    // is the exact string uploaded to YNAB, so the UI-selected payee matches here.
+    const categoriesMapper = readJSONFile('./mapper/CategoriesMapper.json');
+    const defaultCategoryId =
+      categoriesMapper.find((category) => category.CardName === cardCategory)?.id ?? null;
+    const overrideCategoryId =
+      overridesMap && nameWithOutSlash ? overridesMap.get(nameWithOutSlash) : undefined;
+    const category_id = overrideCategoryId ?? defaultCategoryId;
 
 
     return {

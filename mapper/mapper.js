@@ -5,6 +5,7 @@ import { mapCardExpenseToYnabExpense } from './expenseMapper.js';
 import { validateExpenses } from '../ynabApi/validator.js';
 import { uploadExpenses } from '../ynabApi/api.js';
 import { handleDuplicate, saveTransactionsAfterUpload } from '../supabase/transactions.js';
+import { getOverridesMap } from '../supabase/overrides.js';
 import dotenv from 'dotenv';
 
 dotenv.config();
@@ -40,7 +41,7 @@ const isSkippableRow = (date, amount) => {
   return false;
 };
 
-const processSheet = async (worksheet, isAdiCard) => {
+const processSheet = async (worksheet, isAdiCard, overridesMap) => {
   const jsonData = XLSX.utils.sheet_to_json(worksheet, {
     range: 3,
     header: 1,
@@ -58,7 +59,7 @@ const processSheet = async (worksheet, isAdiCard) => {
     if (isSkippableRow(date, amount ?? notFinalAmount)) continue;
 
     const expense = await mapCardExpenseToYnabExpense({
-      date, payee_name: payee, cardCategory: category, amount: amount ?? notFinalAmount, memo: notFinalAmount}, isAdiCard);
+      date, payee_name: payee, cardCategory: category, amount: amount ?? notFinalAmount, memo: notFinalAmount}, isAdiCard, overridesMap);
     if (expense) expenses.push(expense);
   }
 
@@ -71,9 +72,12 @@ export const mapExpenses = async (isAdiCard, skipDuplicateCheck = false) => {
     const workbook = XLSX.readFile(FILE_PATH);
     let allExpenses = [];
 
+    // Fetch payee category overrides once per run (empty Map on error -> default mapping)
+    const overridesMap = await getOverridesMap();
+
     for (const sheetName of workbook.SheetNames) {
       const worksheet = workbook.Sheets[sheetName];
-      const sheetExpenses = await processSheet(worksheet, isAdiCard);
+      const sheetExpenses = await processSheet(worksheet, isAdiCard, overridesMap);
       allExpenses = allExpenses.concat(sheetExpenses);
     }
 

@@ -3,8 +3,8 @@ import type { Metadata, Viewport } from 'next';
 import type { ReactNode } from 'react';
 
 export const metadata: Metadata = {
-  title: 'YNAB Tools',
-  description: 'Manage YNAB automation settings',
+  title: 'YNAB Script',
+  description: 'Manage YNAB automation scripts and settings',
 };
 
 export const viewport: Viewport = {

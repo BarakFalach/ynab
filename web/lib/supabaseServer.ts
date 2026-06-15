@@ -1,16 +1,14 @@
-import { createClient } from '@supabase/supabase-js';
+import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 
-const supabaseUrl = process.env.SUPABASE_URL;
-const supabaseKey = process.env.SUPABASE_ANON_KEY;
+let _supabase: SupabaseClient | null = null;
 
-if (!supabaseUrl || !supabaseKey) {
-  throw new Error(
-    'Missing Supabase environment variables. Set SUPABASE_URL and SUPABASE_ANON_KEY.'
-  );
+export function getSupabase(): SupabaseClient {
+  if (_supabase) return _supabase;
+  const url = process.env.SUPABASE_URL;
+  const key = process.env.SUPABASE_ANON_KEY;
+  if (!url || !key) {
+    throw new Error('Missing Supabase environment variables. Set SUPABASE_URL and SUPABASE_ANON_KEY.');
+  }
+  _supabase = createClient(url, key, { auth: { persistSession: false } });
+  return _supabase;
 }
-
-// Server-side only. All Supabase access goes through Next.js route handlers,
-// so the key never reaches the browser.
-export const supabase = createClient(supabaseUrl, supabaseKey, {
-  auth: { persistSession: false },
-});

@@ -1,12 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { supabase } from '@/lib/supabaseServer';
+import { getSupabase } from '@/lib/supabaseServer';
 import { normalizePayeeName } from '@/lib/normalize';
 
 // Always reflect the latest writes — never cache.
 export const dynamic = 'force-dynamic';
 
 export async function GET() {
-  const { data, error } = await supabase
+  const { data, error } = await getSupabase()
     .from('payee_overrides')
     .select('*')
     .order('payee_name');
@@ -31,7 +31,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'category_id is required' }, { status: 400 });
     }
 
-    const { data, error } = await supabase
+    const { data, error } = await getSupabase()
       .from('payee_overrides')
       .upsert(
         [{ payee_name: payeeName, category_id: categoryId, category_name: categoryName }],

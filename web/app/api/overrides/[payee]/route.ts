@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { supabase } from '@/lib/supabaseServer';
+import { getSupabase } from '@/lib/supabaseServer';
 import { normalizePayeeName } from '@/lib/normalize';
 
 export const dynamic = 'force-dynamic';
@@ -10,7 +10,7 @@ export async function DELETE(
 ) {
   const payeeName = normalizePayeeName(decodeURIComponent(params.payee));
 
-  const { error } = await supabase
+  const { error } = await getSupabase()
     .from('payee_overrides')
     .delete()
     .eq('payee_name', payeeName);

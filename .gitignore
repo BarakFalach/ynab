@@ -4,3 +4,6 @@ transactionLog.json
 downloads/
 .DS_Store
 .vercel
+
+# dev-3.0 local config
+.dev3/config.local.json

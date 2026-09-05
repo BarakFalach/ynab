@@ -1,0 +1,178 @@
+[
+  {
+    "id": 1,
+    "match_text": "משיכת שיק",
+    "match_amount": -9000,
+    "payee_name": "Rent",
+    "category_id": "8c7399a1-4810-4f3b-9234-468f3741784f",
+    "category_name": "Rent 🏠",
+    "transfer_account_id": null,
+    "transfer_account_name": null,
+    "priority": 100
+  },
+  {
+    "id": 2,
+    "match_text": "משיכת שיק",
+    "match_amount": -9400,
+    "payee_name": "Rent",
+    "category_id": "8c7399a1-4810-4f3b-9234-468f3741784f",
+    "category_name": "Rent 🏠",
+    "transfer_account_id": null,
+    "transfer_account_name": null,
+    "priority": 100
+  },
+  {
+    "id": 3,
+    "match_text": "משיכת שיק",
+    "match_amount": -4800,
+    "payee_name": "Daycare",
+    "category_id": "730087de-9b66-40f2-bd13-fc50c8d61cdf",
+    "category_name": "Lulu 🐣",
+    "transfer_account_id": null,
+    "transfer_account_name": null,
+    "priority": 100
+  },
+  {
+    "id": 4,
+    "match_text": "משיכת שיק",
+    "match_amount": -5200,
+    "payee_name": "Daycare",
+    "category_id": "730087de-9b66-40f2-bd13-fc50c8d61cdf",
+    "category_name": "Lulu 🐣",
+    "transfer_account_id": null,
+    "transfer_account_name": null,
+    "priority": 100
+  },
+  {
+    "id": 5,
+    "match_text": "וויקס.קום משכורת",
+    "match_amount": null,
+    "payee_name": "Wix",
+    "category_id": "ba63480c-d90d-481e-a780-83f834dd70f7",
+    "category_name": "Inflow: Ready to Assign",
+    "transfer_account_id": null,
+    "transfer_account_name": null,
+    "priority": 100
+  },
+  {
+    "id": 6,
+    "match_text": "מרמנת",
+    "match_amount": null,
+    "payee_name": "Marmanet",
+    "category_id": "ba63480c-d90d-481e-a780-83f834dd70f7",
+    "category_name": "Inflow: Ready to Assign",
+    "transfer_account_id": null,
+    "transfer_account_name": null,
+    "priority": 100
+  },
+  {
+    "id": 7,
+    "match_text": "מופ\"ת מילו",
+    "match_amount": null,
+    "payee_name": "Miluim",
+    "category_id": "ba63480c-d90d-481e-a780-83f834dd70f7",
+    "category_name": "Inflow: Ready to Assign",
+    "transfer_account_id": null,
+    "transfer_account_name": null,
+    "priority": 100
+  },
+  {
+    "id": 8,
+    "match_text": "ביטוח לאומי",
+    "match_amount": null,
+    "payee_name": "Bituach Leumi - Children",
+    "category_id": "ba63480c-d90d-481e-a780-83f834dd70f7",
+    "category_name": "Inflow: Ready to Assign",
+    "transfer_account_id": null,
+    "transfer_account_name": null,
+    "priority": 100
+  },
+  {
+    "id": 9,
+    "match_text": "ביט משיכה",
+    "match_amount": null,
+    "payee_name": "Bit",
+    "category_id": "ba63480c-d90d-481e-a780-83f834dd70f7",
+    "category_name": "Inflow: Ready to Assign",
+    "transfer_account_id": null,
+    "transfer_account_name": null,
+    "priority": 100
+  },
+  {
+    "id": 10,
+    "match_text": "משרותי בורסה",
+    "match_amount": null,
+    "payee_name": "Wix RSU",
+    "category_id": "ba63480c-d90d-481e-a780-83f834dd70f7",
+    "category_name": "Inflow: Ready to Assign",
+    "transfer_account_id": null,
+    "transfer_account_name": null,
+    "priority": 100
+  },
+  {
+    "id": 11,
+    "match_text": "עמלת",
+    "match_amount": null,
+    "payee_name": "Bank fee",
+    "category_id": "679f1333-f41f-45b8-a9dd-5948cb580481",
+    "category_name": "Bills  📜",
+    "transfer_account_id": null,
+    "transfer_account_name": null,
+    "priority": 100
+  },
+  {
+    "id": 12,
+    "match_text": "החזר דיסקונט עמלות",
+    "match_amount": null,
+    "payee_name": "Bank fee",
+    "category_id": "679f1333-f41f-45b8-a9dd-5948cb580481",
+    "category_name": "Bills  📜",
+    "transfer_account_id": null,
+    "transfer_account_name": null,
+    "priority": 100
+  },
+  {
+    "id": 13,
+    "match_text": "עמ.ערב.שכר",
+    "match_amount": null,
+    "payee_name": "Bank fee - rent guarantee",
+    "category_id": "8c7399a1-4810-4f3b-9234-468f3741784f",
+    "category_name": "Rent 🏠",
+    "transfer_account_id": null,
+    "transfer_account_name": null,
+    "priority": 100
+  },
+  {
+    "id": 14,
+    "match_text": "הפקדה לפיקדון",
+    "match_amount": null,
+    "payee_name": "Bank Deposit (1 year)",
+    "category_id": "8e6fd41b-a588-4731-ba50-413fa533eca2",
+    "category_name": "🔒 Deposit",
+    "transfer_account_id": null,
+    "transfer_account_name": null,
+    "priority": 100
+  },
+  {
+    "id": 15,
+    "match_text": "כ.א.ל חיוב",
+    "match_amount": null,
+    "payee_name": "Dine Card",
+    "category_id": null,
+    "category_name": null,
+    "transfer_account_id": "927f4297-bbd0-428d-ae1c-ad04a42ade08",
+    "transfer_account_name": "Dine Card",
+    "priority": 100
+  },
+  {
+    "id": 16,
+    "match_text": "הע. לאקסלנס",
+    "match_amount": null,
+    "payee_name": "Excellence",
+    "category_id": "78921ff4-854a-4713-9358-573d858f6803",
+    "category_name": "📈  Excellence Trade (Out of Reach)",
+    "transfer_account_id": "d0c0167e-3770-4342-a3ea-620faf0bcfc8",
+    "transfer_account_name": "Excellence",
+    "priority": 100
+  }
+]

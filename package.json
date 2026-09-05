@@ -12,10 +12,12 @@
     "scheduled": "node scripts/scheduled-run.js",
     "barak": "node scraping/getCardData.js",
     "adi": "node scraping/getCardData.js adi",
+    "bank": "node scraping/bank.js",
     "dev": "nodemon api/index.js",
     "build": "echo 'No build step required'",
     "railway:deploy": "railway up",
-    "railway:logs": "railway logs"
+    "railway:logs": "railway logs",
+    "sync:bank": "node scripts/sync-bank.js"
   },
   "repository": {
     "type": "git",
@@ -35,10 +37,14 @@
     "dotenv": "^16.4.7",
     "express": "^4.21.2",
     "firebase": "^11.3.1",
+    "israeli-bank-scrapers": "^6.9.0",
     "multer": "^1.4.5-lts.1",
     "nodemon": "^3.1.9",
     "pg": "^8.11.3",
     "playwright": "^1.49.1",
     "xlsx": "^0.18.5"
+  },
+  "engines": {
+    "node": ">=22.22.2"
   }
 }

@@ -69,5 +69,54 @@
     "name": "Subscription, Games  📺 ",
     "CardName": "שירותי תקשורת"
   },
-  {}
+  {},
+  {
+    "id": "5ec990a4-b61e-4b62-97bc-aa504fdff01d",
+    "category_group_id": null,
+    "category_group_name": "Want",
+    "name": "Going out  💃🏼🕺🏽 ",
+    "CardName": "פנאי, בידור וספורט"
+  },
+  {
+    "id": "0ba2bfb6-bd4e-46ea-8ee1-c7e0dfbd0ff9",
+    "category_group_id": null,
+    "category_group_name": "Want",
+    "name": "Clothing and Accessories  👔 🎀 ",
+    "CardName": "אופנה"
+  },
+  {
+    "id": "a62f1692-b123-49c2-bae0-28266afb6cf5",
+    "category_group_id": null,
+    "category_group_name": "Need",
+    "name": "Subscriptions  📺 ",
+    "CardName": "חשמל ומחשבים"
+  },
+  {
+    "id": "0c84be1d-6495-4dc7-b154-84180f2320b6",
+    "category_group_id": null,
+    "category_group_name": "Vacations",
+    "name": "Vacations ⛱  ",
+    "CardName": "טיסות ותיירות"
+  },
+  {
+    "id": "753e6ba1-ef57-4259-8a33-429c74bad164",
+    "category_group_id": null,
+    "category_group_name": "Need",
+    "name": "Life Insurance  🛟 ",
+    "CardName": "ביטוח"
+  },
+  {
+    "id": "64651099-1341-4895-b648-834f0e1f9ca5",
+    "category_group_id": null,
+    "category_group_name": "Need",
+    "name": "House Holding  🛠 ",
+    "CardName": "עיצוב הבית"
+  },
+  {
+    "id": "d0778412-75a5-4575-bfd7-bc65744994fc",
+    "category_group_id": null,
+    "category_group_name": "Want",
+    "name": "Etc. 🟩   ",
+    "CardName": "ספרים ודפוס"
+  }
 ]

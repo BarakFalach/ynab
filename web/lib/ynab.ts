@@ -1,4 +1,4 @@
-import type { YnabCategory, YnabPayee } from './types';
+import type { YnabAccount, YnabCategory, YnabPayee } from './types';
 
 const BASE = 'https://api.youneedabudget.com/v1';
 
@@ -53,5 +53,30 @@ export async function fetchCategories(): Promise<YnabCategory[]> {
       (g.categories ?? [])
         .filter((c: any) => !c.deleted && !c.hidden)
         .map((c: any): YnabCategory => ({ id: c.id, name: c.name, group: g.name }))
+    );
+}
+
+export async function fetchAccounts(): Promise<YnabAccount[]> {
+  assertConfig();
+  const res = await fetch(`${BASE}/budgets/${budgetId()}/accounts`, {
+    headers: authHeaders(),
+    next: { revalidate: 300 },
+  });
+
+  if (!res.ok) {
+    const body = await res.text();
+    throw new Error(`YNAB accounts request failed (${res.status}): ${body}`);
+  }
+
+  const json = await res.json();
+  return (json.data?.accounts ?? [])
+    .filter((a: any) => !a.deleted && !a.closed)
+    .map(
+      (a: any): YnabAccount => ({
+        id: a.id,
+        name: a.name,
+        type: a.type,
+        transfer_payee_id: a.transfer_payee_id ?? null,
+      })
     );
 }

@@ -17,7 +17,8 @@
     "build": "echo 'No build step required'",
     "railway:deploy": "railway up",
     "railway:logs": "railway logs",
-    "sync:bank": "node scripts/sync-bank.js"
+    "sync:bank": "node scripts/sync-bank.js",
+    "sync:cards": "node scripts/sync-cards.js"
   },
   "repository": {
     "type": "git",

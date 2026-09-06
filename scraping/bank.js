@@ -9,6 +9,12 @@ dotenv.config();
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const OUTPUT_PATH = path.resolve(__dirname, '../downloads/bank-discount.json');
 
+export const PUPPETEER_ARGS = [
+  '--disable-backgrounding-occluded-windows',
+  '--disable-renderer-backgrounding',
+  '--disable-background-timer-throttling',
+];
+
 export const toIsraelDate = (isoString) =>
   new Date(isoString).toLocaleDateString('en-CA', { timeZone: 'Asia/Jerusalem' });
 
@@ -27,7 +33,7 @@ export async function scrapeDiscount({ startDate, showBrowser = true } = {}) {
     companyId: CompanyTypes.discount,
     startDate,
     showBrowser,
-    verbose: false,
+    args: PUPPETEER_ARGS,
   });
 
   const result = await scraper.scrape({ id: DISCOUNT_ID, password: DISCOUNT_PASSWORD, num: DISCOUNT_NUM });

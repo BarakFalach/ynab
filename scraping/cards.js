@@ -3,7 +3,7 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import dotenv from 'dotenv';
 import { CompanyTypes, createScraper } from 'israeli-bank-scrapers';
-import { toIsraelDate } from './bank.js';
+import { PUPPETEER_ARGS, toIsraelDate } from './bank.js';
 
 dotenv.config();
 
@@ -18,6 +18,7 @@ export async function scrapeMax({ startDate, showBrowser = true } = {}) {
     companyId: CompanyTypes.max,
     startDate,
     showBrowser,
+    args: PUPPETEER_ARGS,
     combineInstallments: false,
   });
 

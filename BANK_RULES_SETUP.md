@@ -35,3 +35,17 @@ npm run sync:bank -- --days 30 --upload   # uploads, then checks the balance
 
 Needs Node ≥ 22.22.2 (`.nvmrc`) and `DISCOUNT_ID`, `DISCOUNT_PASSWORD`, `DISCOUNT_NUM`
 in `.env`.
+
+## 4. Card sync (Max, through the same library)
+
+```
+npm run sync:cards -- --days 45                          # dry run
+npm run sync:cards -- --days 45 --upload                 # upload new rows, clear settled ones
+npm run sync:cards -- --days 45 --upload --apply-deletes # also remove pending rows Max no longer lists
+```
+
+Covers Executive Card (6312) and Adi's Card (7626). Settled charges upload cleared with
+`import_id = max:<Max transaction id>`; pending charges upload uncleared with memo
+`max-pending` and are replaced when they settle. Categories come from the payee overrides,
+then `mapper/CategoriesMapper.json`. Card payments are not created here; the bank sync
+records them as transfers.

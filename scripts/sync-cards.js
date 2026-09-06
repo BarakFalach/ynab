@@ -6,6 +6,7 @@ import { toIsraelDate } from '../scraping/bank.js';
 import { scrapeMax } from '../scraping/cards.js';
 import { getOverridesMap } from '../supabase/overrides.js';
 import { mapCardTransactions } from '../mapper/cardMapper.js';
+import { fetchYnabAccounts } from '../ynabApi/bank.js';
 import {
   fetchCategoryNames,
   fetchCardTransactionsSince,
@@ -23,6 +24,7 @@ const days = Number(flagValue('--days') ?? 45);
 const offline = args.includes('--offline');
 const upload = args.includes('--upload');
 const applyDeletes = args.includes('--apply-deletes');
+const jsonPath = flagValue('--json');
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 const startDate = new Date(Date.now() - days * DAY_MS);
@@ -49,6 +51,7 @@ console.log(`cards: ${cardAccounts.map((c) => `${c.accountNumber} (${c.txns.leng
 
 const overridesMap = await getOverridesMap();
 const categoryNameById = await fetchCategoryNames();
+const ynabAccountNameById = new Map((await fetchYnabAccounts()).map((a) => [a.id, a.name]));
 console.log(`${overridesMap.size} payee overrides · ${categoryNameById.size} YNAB categories`);
 
 const cards = await mapCardTransactions({ cardAccounts, overridesMap });
@@ -65,12 +68,35 @@ const consistency = (card, ynabRows) => {
   const sides = [
     { label: 'cleared', ynab: ynabCleared, max: card.completed, maxLabel: 'completed' },
     { label: 'uncleared', ynab: ynabUncleared, max: card.pending, maxLabel: 'pending' },
-  ];
-  const lines = sides.map(({ label, ynab, max, maxLabel }) => {
-    const ok = ynab.length === max.length && sumOf(ynab) === sumOf(max);
-    return `${ok ? '✓' : '✗'} YNAB ${label} since ${startDay}: ${ynab.length} rows / ${(sumOf(ynab) / 1000).toFixed(2)} vs Max ${maxLabel}: ${max.length} / ${(sumOf(max) / 1000).toFixed(2)}`;
-  });
-  return { ok: lines.every((l) => l.startsWith('✓')), lines };
+  ].map((side) => ({ ...side, ok: side.ynab.length === side.max.length && sumOf(side.ynab) === sumOf(side.max) }));
+  const lines = sides.map(
+    ({ label, ynab, max, maxLabel, ok }) =>
+      `${ok ? '✓' : '✗'} YNAB ${label} since ${startDay}: ${ynab.length} rows / ${(sumOf(ynab) / 1000).toFixed(2)} vs Max ${maxLabel}: ${max.length} / ${(sumOf(max) / 1000).toFixed(2)}`,
+  );
+  const summary = Object.fromEntries(
+    sides.map(({ label, ynab, max, ok }) => [
+      label,
+      { ynabRows: ynab.length, ynabSum: sumOf(ynab) / 1000, maxRows: max.length, maxSum: sumOf(max) / 1000, ok },
+    ]),
+  );
+  return { ok: sides.every((s) => s.ok), lines, summary };
+};
+
+const report = {
+  kind: 'cards',
+  mode: upload ? (applyDeletes ? 'upload+deletes' : 'upload') : 'dry-run',
+  offline,
+  sinceDate: startDay,
+  generatedAt: null,
+  cards: [],
+  uncategorized: [],
+  totals: null,
+};
+const writeReport = () => {
+  if (!jsonPath) return;
+  report.generatedAt = new Date().toISOString();
+  fs.writeFileSync(path.resolve(jsonPath), JSON.stringify(report, null, 2));
+  console.log(`report written to ${jsonPath}`);
 };
 
 const plans = [];
@@ -118,6 +144,7 @@ for (const card of cards) {
   const extra = [...unclaimed].filter(isCleared);
   const uploadCompleted = toUpload.filter((t) => t.import_id);
   const uploadPending = toUpload.filter((t) => !t.import_id);
+  const uncategorized = toUpload.filter((t) => !t.category_id);
 
   const actions = [
     ...uploadCompleted.map((t) => ({ ...t, action: 'upload-completed' })),
@@ -135,7 +162,7 @@ for (const card of cards) {
     }
   }
   console.log(
-    `completed matched ${completedMatched} · toUpload completed ${uploadCompleted.length} · toUpload pending ${uploadPending.length} · pending kept ${pendingKept} · pendingSuperseded ${card.pendingSuperseded} · toClear ${toClear.length} · staleToDelete ${staleToDelete.length} · extra ${extra.length} · uncategorized uploads ${toUpload.filter((t) => !t.category_id).length}`,
+    `completed matched ${completedMatched} · toUpload completed ${uploadCompleted.length} · toUpload pending ${uploadPending.length} · pending kept ${pendingKept} · pendingSuperseded ${card.pendingSuperseded} · toClear ${toClear.length} · staleToDelete ${staleToDelete.length} · extra ${extra.length} · uncategorized uploads ${uncategorized.length}`,
   );
   if (staleToDelete.length && !(upload && applyDeletes)) console.log(`stale rows are listed only; pass --upload --apply-deletes to delete them`);
 
@@ -145,37 +172,87 @@ for (const card of cards) {
     ...existing.filter((t) => !(applyDeletes && staleIds.has(t.id))).map((t) => (clearIds.has(t.id) ? { ...t, cleared: 'cleared' } : t)),
     ...toUpload,
   ];
-  for (const line of consistency(card, afterPlannedActions).lines) console.log(`  ${line}`);
+  const planned = consistency(card, afterPlannedActions);
+  for (const line of planned.lines) console.log(`  ${line}`);
 
-  plans.push({ card, toUpload, toClear, staleToDelete });
+  const cardReport = {
+    accountNumber: card.accountNumber,
+    accountId: card.accountId,
+    ynabAccountName: ynabAccountNameById.get(card.accountId) ?? null,
+    counts: {
+      completedMatched,
+      toUploadCompleted: uploadCompleted.length,
+      toUploadPending: uploadPending.length,
+      pendingKept,
+      pendingSuperseded: card.pendingSuperseded,
+      toClear: toClear.length,
+      staleToDelete: staleToDelete.length,
+      extra: extra.length,
+      uncategorizedUploads: uncategorized.length,
+    },
+    actions: actions.map((t) => ({
+      action: t.action,
+      date: t.date,
+      amount: t.amount / 1000,
+      payeeName: t.payee_name ?? null,
+      categoryName: t.category_id ? categoryLabel(t) : null,
+      maxCategory: t.maxCategory ?? null,
+      ynabTransactionId: t.id ?? null,
+    })),
+    consistency: planned.summary,
+    afterUpload: null,
+  };
+  report.cards.push(cardReport);
+  report.uncategorized.push(
+    ...uncategorized.map((t) => ({
+      payeeName: t.payee_name,
+      maxCategory: t.maxCategory ?? null,
+      date: t.date,
+      amount: t.amount / 1000,
+      accountNumber: card.accountNumber,
+    })),
+  );
+
+  plans.push({ card, cardReport, toUpload, toClear, staleToDelete });
 }
 
-if (!upload) process.exit(0);
+if (!upload) {
+  writeReport();
+  process.exit(0);
+}
 
 const allToUpload = plans.flatMap((p) => p.toUpload);
+let created = 0;
 if (allToUpload.length) {
-  const result = await uploadCardTransactions(allToUpload);
+  const result = await uploadCardTransactions(allToUpload.map(({ maxCategory, ...t }) => t));
+  created = result.created;
   console.log(`\nuploaded: created ${result.created}, duplicate import ids ${result.duplicateImportIds}`);
 }
 
 const allToClear = plans.flatMap((p) => p.toClear);
+let cleared = 0;
 if (allToClear.length) {
-  const updated = await clearCardTransactions(allToClear.map((t) => t.id));
-  console.log(`cleared: ${updated} rows`);
+  cleared = await clearCardTransactions(allToClear.map((t) => t.id));
+  console.log(`cleared: ${cleared} rows`);
 }
 
+let deleted = 0;
 if (applyDeletes) {
   const allStale = plans.flatMap((p) => p.staleToDelete);
   for (const t of allStale) await deleteCardTransaction(t.id);
-  console.log(`deleted stale: ${allStale.length} rows`);
+  deleted = allStale.length;
+  console.log(`deleted stale: ${deleted} rows`);
 }
+report.totals = { created, cleared, deleted };
 
 let allOk = true;
-for (const { card } of plans) {
+for (const { card, cardReport } of plans) {
   const rows = (await fetchCardTransactionsSince(card.accountId, startDay)).filter(isRelevant);
-  const { ok, lines } = consistency(card, rows);
+  const { ok, lines, summary } = consistency(card, rows);
+  cardReport.afterUpload = summary;
   console.log(`\ncard ${card.accountNumber} after upload:`);
   for (const line of lines) console.log(`  ${line}`);
   allOk &&= ok;
 }
+writeReport();
 if (!allOk) process.exit(1);

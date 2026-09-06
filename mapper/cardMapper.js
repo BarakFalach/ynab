@@ -47,9 +47,9 @@ export const mapCardTransactions = async ({ cardAccounts, overridesMap }) => {
       if (!payload) continue;
 
       if (isPending) {
-        pending.push({ ...payload, cleared: 'uncleared', approved: true, flag_color: null });
+        pending.push({ ...payload, maxCategory: txn.category, cleared: 'uncleared', approved: true, flag_color: null });
       } else {
-        completed.push({ ...payload, cleared: 'cleared', approved: true, import_id: `max:${txn.identifier}` });
+        completed.push({ ...payload, maxCategory: txn.category, cleared: 'cleared', approved: true, import_id: `max:${txn.identifier}` });
       }
     }
 

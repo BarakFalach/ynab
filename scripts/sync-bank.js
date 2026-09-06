@@ -17,6 +17,7 @@ const days = Number(flagValue('--days') ?? 30);
 const offline = args.includes('--offline');
 const upload = args.includes('--upload');
 const rulesJsonPath = flagValue('--rules-json');
+const jsonPath = flagValue('--json');
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 const startDate = new Date(Date.now() - days * DAY_MS);
@@ -85,9 +86,10 @@ for (const t of transactions) {
 console.log(`\nmapped ${transactions.length} · alreadyInYnab ${alreadyInYnab} · toUpload ${toUpload.length} · unmatched ${unmatched.length}`);
 for (const u of unmatched) console.log(`  unmatched ${u.date} ${u.chargedAmount} ${u.description} (ref ${u.identifier}): ${u.reason}`);
 
+let uploadResult = upload ? { created: 0, duplicateImportIds: 0 } : null;
 if (upload && toUpload.length) {
-  const result = await uploadBankTransactions(toUpload);
-  console.log(`uploaded: created ${result.created}, duplicate import ids ${result.duplicateImportIds}`);
+  uploadResult = await uploadBankTransactions(toUpload);
+  console.log(`uploaded: created ${uploadResult.created}, duplicate import ids ${uploadResult.duplicateImportIds}`);
 }
 
 const ynabBankAccount = await fetchYnabBankAccount();
@@ -97,5 +99,46 @@ if (difference === 0) {
   console.log(`balance match ✓  YNAB ${ynabBalance.toFixed(2)} vs Discount ${discountAccount.balance.toFixed(2)}`);
 } else {
   console.log(`balance differs: YNAB ${ynabBalance.toFixed(2)} vs Discount ${discountAccount.balance.toFixed(2)} (YNAB − Discount = ${difference.toFixed(2)})`);
-  if (upload) process.exit(1);
 }
+
+if (jsonPath) {
+  const bankTxnByImportId = new Map(bankTxns.map((b) => [`discount:${b.identifier}`, b]));
+  const unmatchedReasonByIdentifier = new Map(unmatched.map((u) => [u.identifier, u.reason]));
+  const rows = transactions.map((t) => {
+    const bankTxn = bankTxnByImportId.get(t.import_id);
+    return {
+      date: t.date,
+      amount: t.amount / 1000,
+      description: bankTxn.description,
+      identifier: bankTxn.identifier,
+      payeeName: t.payee_name ?? null,
+      transferAccountName: t.payee_id ? accountNameByTransferPayee.get(t.payee_id) ?? null : null,
+      categoryName: t.category_id ? categoryNameById.get(t.category_id) ?? t.category_id : null,
+      flag: t.flag_color ?? null,
+      status: uploadSet.has(t) ? 'upload' : 'in YNAB',
+      unmatchedReason: unmatchedReasonByIdentifier.get(bankTxn.identifier) ?? null,
+    };
+  });
+  const report = {
+    kind: 'bank',
+    mode: upload ? 'upload' : 'dry-run',
+    offline,
+    sinceDate: startDay,
+    generatedAt: new Date().toISOString(),
+    counts: {
+      mapped: transactions.length,
+      alreadyInYnab,
+      toUpload: toUpload.length,
+      unmatched: unmatched.length,
+      created: uploadResult?.created ?? null,
+      duplicateImportIds: uploadResult?.duplicateImportIds ?? null,
+    },
+    rows,
+    unmatched: rows.filter((r) => r.unmatchedReason),
+    balance: { ynab: ynabBalance, bank: discountAccount.balance, match: difference === 0 },
+  };
+  fs.writeFileSync(path.resolve(jsonPath), JSON.stringify(report, null, 2));
+  console.log(`report written to ${jsonPath}`);
+}
+
+if (difference !== 0 && upload) process.exit(1);

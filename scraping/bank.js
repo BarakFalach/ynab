@@ -13,6 +13,7 @@ export const PUPPETEER_ARGS = [
   '--disable-backgrounding-occluded-windows',
   '--disable-renderer-backgrounding',
   '--disable-background-timer-throttling',
+  ...(process.env.CI ? ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage'] : []),
 ];
 
 export const toIsraelDate = (isoString) =>

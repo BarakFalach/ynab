@@ -69,7 +69,14 @@ says "apply all".
 - Rows already in YNAB that the new override should have categorized: update them with
   `PATCH /budgets/{BUDGET_ID}/transactions` so the fix is not only forward-looking.
 
-### 5. Report
+### 5. Reconcile in YNAB
+
+YNAB has no reconcile endpoint; reconciling means locking the cleared rows once the cleared balance
+equals the statement. When the report's balance checks pass for an account, PATCH every row with
+`cleared: 'cleared'` in that account to `cleared: 'reconciled'` (bulk, 100 per request). Do this for
+Shared Account, Executive Card, and Adi's Card only. Skip an account whose check failed and say why.
+
+### 6. Report
 
 End with one table, no more:
 

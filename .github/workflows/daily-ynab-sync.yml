@@ -4,47 +4,58 @@ on:
   schedule:
     - cron: '0 2 * * *'
     - cron: '0 16 * * *'
-  workflow_dispatch: # Allow manual triggering
+  workflow_dispatch:
+
+concurrency:
+  group: ynab-sync
+  cancel-in-progress: false
 
 jobs:
-  sync-expenses:
+  sync:
     runs-on: ubuntu-latest
-    
+    timeout-minutes: 20
+    env:
+      YNAB_ACCESS_TOKEN: ${{ secrets.YNAB_ACCESS_TOKEN }}
+      BUDGET_ID: ${{ secrets.BUDGET_ID }}
+      BANK_ACCOUNT: ${{ secrets.BANK_ACCOUNT }}
+      BARAK_CARD: ${{ secrets.BARAK_CARD }}
+      ADI_CARD: ${{ secrets.ADI_CARD }}
+      CREDIT_CARD_USERNAME: ${{ secrets.CREDIT_CARD_USERNAME }}
+      CREDIT_CARD_PASSWORD: ${{ secrets.CREDIT_CARD_PASSWORD }}
+      DISCOUNT_ID: ${{ secrets.DISCOUNT_ID }}
+      DISCOUNT_PASSWORD: ${{ secrets.DISCOUNT_PASSWORD }}
+      DISCOUNT_NUM: ${{ secrets.DISCOUNT_NUM }}
+      SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+      SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+      PUPPETEER_CACHE_DIR: ${{ github.workspace }}/.puppeteer-cache
+
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v5
-        
-      - name: Setup Node.js
-        uses: actions/setup-node@v5
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v5
         with:
-          node-version: '22'
-          cache: 'npm'
-          
-      - name: Install dependencies
-        run: npm ci
-        
-      - name: Install Playwright browsers
-        run: npx playwright install chromium
-        
-      - name: Run YNAB sync script
-        env:
-          CREDIT_CARD_USERNAME: ${{ secrets.CREDIT_CARD_USERNAME }}
-          CREDIT_CARD_PASSWORD: ${{ secrets.CREDIT_CARD_PASSWORD }}
-          YNAB_ACCESS_TOKEN: ${{ secrets.YNAB_ACCESS_TOKEN }}
-          BUDGET_ID: ${{ secrets.BUDGET_ID }}
-          BARAK_CARD: ${{ secrets.BARAK_CARD }}
-          ADI_CARD: ${{ secrets.ADI_CARD }}
-          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
-          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
-          NODE_ENV: production
-        run: npm run scheduled
-        
-      - name: Notify on success
-        if: success()
-        run: |
-          echo "✅ YNAB sync completed successfully at $(date)"
-          
-      - name: Notify on failure
-        if: failure()
-        run: |
-          echo "❌ YNAB sync failed at $(date)"
+          node-version-file: .nvmrc
+          cache: npm
+
+      - uses: actions/cache@v4
+        with:
+          path: .puppeteer-cache
+          key: puppeteer-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
+
+      - run: npm ci
+
+      - run: mkdir -p reports
+
+      - name: Sync bank (Discount)
+        run: node scripts/sync-bank.js --days 30 --upload --json reports/bank.json
+
+      - name: Sync cards (Max)
+        run: node scripts/sync-cards.js --days 45 --upload --apply-deletes --json reports/cards.json
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: sync-reports-${{ github.run_id }}
+          path: reports/
+          if-no-files-found: ignore
+          retention-days: 30

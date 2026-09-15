@@ -131,7 +131,9 @@ for (const card of cards) {
   }
 
   for (const candidate of card.pending) {
-    const match = [...unclaimed].find((e) => !isCleared(e) && e.date === candidate.date && e.amount === candidate.amount);
+    const match =
+      [...unclaimed].find((e) => e.import_id && e.import_id === candidate.import_id) ??
+      [...unclaimed].find((e) => !isCleared(e) && !e.import_id && e.date === candidate.date && e.amount === candidate.amount);
     if (match) {
       unclaimed.delete(match);
       pendingKept += 1;
@@ -142,8 +144,8 @@ for (const card of cards) {
 
   const staleToDelete = [...unclaimed].filter((e) => !isCleared(e));
   const extra = [...unclaimed].filter(isCleared);
-  const uploadCompleted = toUpload.filter((t) => t.import_id);
-  const uploadPending = toUpload.filter((t) => !t.import_id);
+  const uploadCompleted = toUpload.filter((t) => t.cleared === 'cleared');
+  const uploadPending = toUpload.filter((t) => t.cleared !== 'cleared');
   const uncategorized = toUpload.filter((t) => !t.category_id);
 
   const actions = [

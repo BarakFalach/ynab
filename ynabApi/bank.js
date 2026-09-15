@@ -20,8 +20,8 @@ export const fetchYnabBankAccount = async () => {
 };
 
 export const fetchBankTransactionsSince = async (date) => {
-  const { data } = await ynab().get(`/accounts/${process.env.BANK_ACCOUNT}/transactions`, { params: { since_date: date } });
-  return data.data.transactions;
+  const { data } = await ynab().get(`/accounts/${process.env.BANK_ACCOUNT}/transactions`, { params: { since_date: date, last_knowledge_of_server: 1 } });
+  return data.data.transactions.filter((t) => !t.deleted);
 };
 
 export const uploadBankTransactions = async (transactions) => {

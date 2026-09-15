@@ -1,8 +1,11 @@
+import { createHash } from 'crypto';
 import { mapCardExpenseToYnabExpense } from './expenseMapper.js';
 
 const toDayMonthYear = (isoDay) => isoDay.split('-').reverse().join('-');
 const foreignAmountNote = (txn) => (txn.originalCurrency !== 'ILS' ? `${Math.abs(txn.originalAmount)} ${txn.originalCurrency}` : '');
 const normalizeDescription = (description) => description.trim().replace(/\s+/g, ' ');
+const pendingImportId = (cardNumber, txn, ordinal) =>
+  `max-pending:${createHash('sha1').update(`${cardNumber}|${txn.date}|${txn.originalAmount}|${normalizeDescription(txn.description)}|${ordinal}`).digest('hex').slice(0, 24)}`;
 const isSettledTwin = (pendingTxn, completedTxn) => {
   const pendingDescription = normalizeDescription(pendingTxn.description);
   const completedDescription = normalizeDescription(completedTxn.description);
@@ -25,6 +28,7 @@ export const mapCardTransactions = async ({ cardAccounts, overridesMap }) => {
     const completed = [];
     const pending = [];
     let pendingSuperseded = 0;
+    const pendingOrdinals = new Map();
 
     for (const txn of card.txns) {
       const isPending = txn.status === 'pending';
@@ -47,7 +51,10 @@ export const mapCardTransactions = async ({ cardAccounts, overridesMap }) => {
       if (!payload) continue;
 
       if (isPending) {
-        pending.push({ ...payload, maxCategory: txn.category, cleared: 'uncleared', approved: true, flag_color: null });
+        const pendingKey = `${txn.date}|${txn.originalAmount}|${normalizeDescription(txn.description)}`;
+        const ordinal = pendingOrdinals.get(pendingKey) ?? 0;
+        pendingOrdinals.set(pendingKey, ordinal + 1);
+        pending.push({ ...payload, maxCategory: txn.category, cleared: 'uncleared', approved: true, flag_color: null, import_id: pendingImportId(card.accountNumber, txn, ordinal) });
       } else {
         completed.push({ ...payload, maxCategory: txn.category, cleared: 'cleared', approved: true, import_id: `max:${txn.identifier}` });
       }

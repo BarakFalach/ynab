@@ -40,11 +40,21 @@ const bankAccounts = offline
       txns: account.txns.map((t) => ({ ...t, date: toIsraelDate(t.date), processedDate: toIsraelDate(t.processedDate) })),
     }))
   : await scrapeDiscount({ startDate, showBrowser: false });
-const cardAccounts = offline ? readJson('downloads/cards-max.json') : await scrapeMax({ startDate: cardsStartDate, showBrowser: false });
+let cardAccounts = [];
+let maxScrapeError = null;
+if (offline) cardAccounts = readJson('downloads/cards-max.json');
+else {
+  try { cardAccounts = await scrapeMax({ startDate: cardsStartDate, showBrowser: false }); }
+  catch (error) { maxScrapeError = error.message.split('\n')[0]; }
+}
 
 const discountAccount = bankAccounts[0];
-const bankTxns = discountAccount.txns.filter((t) => t.date >= startDay);
-console.log(`Discount account ${discountAccount.accountNumber}: ${bankTxns.length} rows · cards: ${cardAccounts.map((c) => `${c.accountNumber} (${c.txns.length})`).join(', ')}`);
+const isMaxRow = (t) => /^מקס איט פי/.test(t.description);
+const allBankTxns = discountAccount.txns.filter((t) => t.date >= startDay);
+const deferred = maxScrapeError ? allBankTxns.filter(isMaxRow) : [];
+const bankTxns = maxScrapeError ? allBankTxns.filter((t) => !isMaxRow(t)) : allBankTxns;
+console.log(`Discount account ${discountAccount.accountNumber}: ${allBankTxns.length} rows · cards: ${cardAccounts.map((c) => `${c.accountNumber} (${c.txns.length})`).join(', ') || 'none'}`);
+if (maxScrapeError) console.log(`Max login failed (${maxScrapeError}) · ${deferred.length} Max rows deferred to the next run`);
 
 const ynabAccounts = await fetchYnabAccounts();
 const rules = rulesJsonPath
@@ -83,7 +93,7 @@ for (const t of transactions) {
   console.log(`${t.date}  ${formatAmount(t.amount)} ${target.padEnd(40)} ${category.padEnd(37)} ${(t.flag_color ?? '').padEnd(7)} ${status}`);
 }
 
-console.log(`\nmapped ${transactions.length} · alreadyInYnab ${alreadyInYnab} · toUpload ${toUpload.length} · unmatched ${unmatched.length}`);
+console.log(`\nmapped ${transactions.length} · alreadyInYnab ${alreadyInYnab} · toUpload ${toUpload.length} · unmatched ${unmatched.length}${deferred.length ? ` · deferred ${deferred.length}` : ''}`);
 for (const u of unmatched) console.log(`  unmatched ${u.date} ${u.chargedAmount} ${u.description} (ref ${u.identifier}): ${u.reason}`);
 
 let uploadResult = upload ? { created: 0, duplicateImportIds: 0 } : null;
@@ -94,9 +104,10 @@ if (upload && toUpload.length) {
 
 const ynabBankAccount = await fetchYnabBankAccount();
 const ynabBalance = ynabBankAccount.balance / 1000;
-const difference = Math.round((ynabBalance - discountAccount.balance) * 100) / 100;
+const deferredSum = Math.round(deferred.reduce((sum, t) => sum + t.chargedAmount, 0) * 100) / 100;
+const difference = Math.round((ynabBalance - discountAccount.balance + deferredSum) * 100) / 100;
 if (difference === 0) {
-  console.log(`balance match ✓  YNAB ${ynabBalance.toFixed(2)} vs Discount ${discountAccount.balance.toFixed(2)}`);
+  console.log(`balance match ✓  YNAB ${ynabBalance.toFixed(2)} vs Discount ${discountAccount.balance.toFixed(2)}${deferred.length ? ` (net of ${deferred.length} deferred Max rows, ${deferredSum.toFixed(2)})` : ''}`);
 } else {
   console.log(`balance differs: YNAB ${ynabBalance.toFixed(2)} vs Discount ${discountAccount.balance.toFixed(2)} (YNAB − Discount = ${difference.toFixed(2)})`);
 }
@@ -130,12 +141,14 @@ if (jsonPath) {
       alreadyInYnab,
       toUpload: toUpload.length,
       unmatched: unmatched.length,
+      deferred: deferred.length,
       created: uploadResult?.created ?? null,
       duplicateImportIds: uploadResult?.duplicateImportIds ?? null,
     },
     rows,
     unmatched: rows.filter((r) => r.unmatchedReason),
     balance: { ynab: ynabBalance, bank: discountAccount.balance, match: difference === 0 },
+    maxScrapeError,
   };
   fs.writeFileSync(path.resolve(jsonPath), JSON.stringify(report, null, 2));
   console.log(`report written to ${jsonPath}`);

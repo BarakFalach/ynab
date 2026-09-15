@@ -245,14 +245,21 @@ if (applyDeletes) {
 }
 report.totals = { created, cleared, deleted };
 
+const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 let allOk = true;
 for (const { card, cardReport } of plans) {
-  const rows = (await fetchCardTransactionsSince(card.accountId, startDay)).filter(isRelevant);
-  const { ok, lines, summary } = consistency(card, rows);
-  cardReport.afterUpload = summary;
+  let result;
+  for (let attempt = 1; attempt <= 3; attempt++) {
+    const rows = (await fetchCardTransactionsSince(card.accountId, startDay)).filter(isRelevant);
+    result = consistency(card, rows);
+    if (result.ok || attempt === 3) break;
+    console.log(`\ncard ${card.accountNumber} after upload: mismatch on attempt ${attempt}, re-fetching in 10s`);
+    await sleep(10000);
+  }
+  cardReport.afterUpload = result.summary;
   console.log(`\ncard ${card.accountNumber} after upload:`);
-  for (const line of lines) console.log(`  ${line}`);
-  allOk &&= ok;
+  for (const line of result.lines) console.log(`  ${line}`);
+  allOk &&= result.ok;
 }
 writeReport();
 if (!allOk) process.exit(1);

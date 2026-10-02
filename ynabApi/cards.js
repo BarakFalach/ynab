@@ -39,6 +39,15 @@ export const clearCardTransactions = async (ids) => {
   return updated;
 };
 
+export const recategorizeCardTransactions = async (updates) => {
+  let updated = 0;
+  for (const chunk of chunkArray(updates, 50)) {
+    const { data } = await ynab().patch('/transactions', { transactions: chunk.map(({ id, category_id }) => ({ id, category_id })) });
+    updated += data.data.transaction_ids?.length ?? 0;
+  }
+  return updated;
+};
+
 export const deleteCardTransaction = async (id) => {
   await ynab().delete(`/transactions/${id}`);
 };

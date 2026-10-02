@@ -32,7 +32,8 @@ reach the browser.
 
 ## Supabase
 
-Requires the `payee_overrides` table — see `../OVERRIDES_SETUP.md` for the DDL.
+Requires the `payee_overrides` table — see `../OVERRIDES_SETUP.md` for the DDL —
+and the `trips` table — run `../supabase/trips.sql`.
 
 ## API routes
 
@@ -41,6 +42,9 @@ Requires the `payee_overrides` table — see `../OVERRIDES_SETUP.md` for the DDL
 - `GET /api/overrides` — list overrides
 - `POST /api/overrides` — upsert `{ payee_name, category_id, category_name }` (payee normalized server-side)
 - `DELETE /api/overrides/[payee]` — delete one override
+- `GET /api/trips` — list trips
+- `POST /api/trips` — insert, or update when `id` is set, `{ name, currency, start_date, end_date, category_id, category_name, excluded_max_categories }`
+- `DELETE /api/trips/[id]` — delete one trip
 
 ## Deploying to Vercel
 

@@ -63,6 +63,11 @@ Notes:
   `processSheet` into `mapCardExpenseToYnabExpense`.
 - `mapper/expenseMapper.js` resolves the category with precedence:
   **override > `CategoriesMapper.json` (by card category) > `null`**.
+- `mapper/cardMapper.js` then applies trips (`supabase/trips.sql`, managed on the
+  portal's Trips page): a card row in the trip's currency, dated inside the trip,
+  and not in one of its excluded Max categories goes to the trip category, above
+  any payee override. `scripts/sync-cards.js` also moves already-uploaded rows to
+  the trip category when they still carry the category the mapper gave them.
 
 If Supabase is unreachable, `getOverridesMap()` returns an empty map and the
 mapper falls back to the default mapping — uploads are never blocked.

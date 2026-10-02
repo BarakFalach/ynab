@@ -5,6 +5,7 @@ import dotenv from 'dotenv';
 import { toIsraelDate } from '../scraping/bank.js';
 import { scrapeMax } from '../scraping/cards.js';
 import { getOverridesMap } from '../supabase/overrides.js';
+import { getTrips } from '../supabase/trips.js';
 import { mapCardTransactions } from '../mapper/cardMapper.js';
 import { fetchYnabAccounts } from '../ynabApi/bank.js';
 import {
@@ -12,6 +13,7 @@ import {
   fetchCardTransactionsSince,
   uploadCardTransactions,
   clearCardTransactions,
+  recategorizeCardTransactions,
   deleteCardTransaction,
 } from '../ynabApi/cards.js';
 
@@ -50,16 +52,21 @@ const cardAccounts = (offline ? readJson('downloads/cards-max.json') : await scr
 console.log(`cards: ${cardAccounts.map((c) => `${c.accountNumber} (${c.txns.length})`).join(', ')}`);
 
 const overridesMap = await getOverridesMap();
+const trips = await getTrips();
 const categoryNameById = await fetchCategoryNames();
 const ynabAccountNameById = new Map((await fetchYnabAccounts()).map((a) => [a.id, a.name]));
-console.log(`${overridesMap.size} payee overrides · ${categoryNameById.size} YNAB categories`);
+console.log(`${overridesMap.size} payee overrides · ${trips.length} trips · ${categoryNameById.size} YNAB categories`);
 
-const cards = await mapCardTransactions({ cardAccounts, overridesMap });
+const cards = await mapCardTransactions({ cardAccounts, overridesMap, trips });
 
 const isRelevant = (t) => !t.deleted && !t.transfer_account_id && !(t.payee_name ?? '').includes('Reconciliation');
 const isCleared = (t) => t.cleared !== 'uncleared';
 const sumOf = (rows) => rows.reduce((total, r) => total + r.amount, 0);
 const formatAmount = (milliunits) => (milliunits / 1000).toFixed(2).padStart(11);
+const needsTripCategory = (existing, candidate) =>
+  candidate.baseCategoryId !== undefined &&
+  existing.category_id !== candidate.category_id &&
+  (!existing.category_id || existing.category_id === candidate.baseCategoryId);
 const categoryLabel = (t) => (t.category_id ? categoryNameById.get(t.category_id) ?? t.category_name ?? t.category_id : '—');
 
 const consistency = (card, ynabRows) => {
@@ -105,6 +112,11 @@ for (const card of cards) {
   const unclaimed = new Set(existing);
   const toUpload = [];
   const toClear = [];
+  const toRecategorize = [];
+  const claim = (match, candidate) => {
+    unclaimed.delete(match);
+    if (needsTripCategory(match, candidate)) toRecategorize.push({ ...match, category_id: candidate.category_id });
+  };
   let completedMatched = 0;
   let pendingKept = 0;
 
@@ -112,7 +124,7 @@ for (const card of cards) {
   for (const candidate of card.completed) {
     const match = [...unclaimed].find((e) => e.import_id && e.import_id === candidate.import_id);
     if (match) {
-      unclaimed.delete(match);
+      claim(match, candidate);
       completedMatched += 1;
       if (!isCleared(match)) toClear.push(match);
     } else {
@@ -122,7 +134,7 @@ for (const card of cards) {
   for (const candidate of unmatchedCompleted) {
     const match = [...unclaimed].find((e) => e.date === candidate.date && e.amount === candidate.amount);
     if (match) {
-      unclaimed.delete(match);
+      claim(match, candidate);
       completedMatched += 1;
       if (!isCleared(match)) toClear.push(match);
     } else {
@@ -135,7 +147,7 @@ for (const card of cards) {
       [...unclaimed].find((e) => e.import_id && e.import_id === candidate.import_id) ??
       [...unclaimed].find((e) => !isCleared(e) && !e.import_id && e.date === candidate.date && e.amount === candidate.amount);
     if (match) {
-      unclaimed.delete(match);
+      claim(match, candidate);
       pendingKept += 1;
     } else {
       toUpload.push(candidate);
@@ -152,6 +164,7 @@ for (const card of cards) {
     ...uploadCompleted.map((t) => ({ ...t, action: 'upload-completed' })),
     ...uploadPending.map((t) => ({ ...t, action: 'upload-pending' })),
     ...toClear.map((t) => ({ ...t, action: 'clear' })),
+    ...toRecategorize.map((t) => ({ ...t, action: 'trip-category' })),
     ...staleToDelete.map((t) => ({ ...t, action: 'delete-stale' })),
     ...extra.map((t) => ({ ...t, action: 'extra' })),
   ].sort((a, b) => a.date.localeCompare(b.date));
@@ -164,7 +177,7 @@ for (const card of cards) {
     }
   }
   console.log(
-    `completed matched ${completedMatched} · toUpload completed ${uploadCompleted.length} · toUpload pending ${uploadPending.length} · pending kept ${pendingKept} · pendingSuperseded ${card.pendingSuperseded} · toClear ${toClear.length} · staleToDelete ${staleToDelete.length} · extra ${extra.length} · uncategorized uploads ${uncategorized.length}`,
+    `completed matched ${completedMatched} · toUpload completed ${uploadCompleted.length} · toUpload pending ${uploadPending.length} · pending kept ${pendingKept} · pendingSuperseded ${card.pendingSuperseded} · toClear ${toClear.length} · tripRecategorize ${toRecategorize.length} · staleToDelete ${staleToDelete.length} · extra ${extra.length} · uncategorized uploads ${uncategorized.length}`,
   );
   if (staleToDelete.length && !(upload && applyDeletes)) console.log(`stale rows are listed only; pass --upload --apply-deletes to delete them`);
 
@@ -188,6 +201,7 @@ for (const card of cards) {
       pendingKept,
       pendingSuperseded: card.pendingSuperseded,
       toClear: toClear.length,
+      tripRecategorize: toRecategorize.length,
       staleToDelete: staleToDelete.length,
       extra: extra.length,
       uncategorizedUploads: uncategorized.length,
@@ -215,7 +229,7 @@ for (const card of cards) {
     })),
   );
 
-  plans.push({ card, cardReport, toUpload, toClear, staleToDelete });
+  plans.push({ card, cardReport, toUpload, toClear, toRecategorize, staleToDelete });
 }
 
 if (!upload) {
@@ -226,7 +240,7 @@ if (!upload) {
 const allToUpload = plans.flatMap((p) => p.toUpload);
 let created = 0;
 if (allToUpload.length) {
-  const result = await uploadCardTransactions(allToUpload.map(({ maxCategory, ...t }) => t));
+  const result = await uploadCardTransactions(allToUpload.map(({ maxCategory, baseCategoryId, ...t }) => t));
   created = result.created;
   console.log(`\nuploaded: created ${result.created}, duplicate import ids ${result.duplicateImportIds}`);
 }
@@ -238,6 +252,13 @@ if (allToClear.length) {
   console.log(`cleared: ${cleared} rows`);
 }
 
+const allToRecategorize = plans.flatMap((p) => p.toRecategorize);
+let recategorized = 0;
+if (allToRecategorize.length) {
+  recategorized = await recategorizeCardTransactions(allToRecategorize);
+  console.log(`moved to trip category: ${recategorized} rows`);
+}
+
 let deleted = 0;
 if (applyDeletes) {
   const allStale = plans.flatMap((p) => p.staleToDelete);
@@ -245,7 +266,7 @@ if (applyDeletes) {
   deleted = allStale.length;
   console.log(`deleted stale: ${deleted} rows`);
 }
-report.totals = { created, cleared, deleted };
+report.totals = { created, cleared, recategorized, deleted };
 
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 let allOk = true;

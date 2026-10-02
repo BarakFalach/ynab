@@ -21,6 +21,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
         <nav className="nav">
           <Link href="/overrides">Card overrides</Link>
           <Link href="/bank-rules">Bank rules</Link>
+          <Link href="/trips">Trips</Link>
         </nav>
         {children}
       </body>

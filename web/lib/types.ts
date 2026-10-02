@@ -38,3 +38,16 @@ export interface BankRule {
   created_at: string;
   updated_at: string;
 }
+
+export interface Trip {
+  id: number;
+  name: string;
+  currency: string;
+  start_date: string;
+  end_date: string;
+  category_id: string;
+  category_name: string | null;
+  excluded_max_categories: string[];
+  created_at: string;
+  updated_at: string;
+}

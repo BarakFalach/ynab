@@ -15,7 +15,16 @@ const isSettledTwin = (pendingTxn, completedTxn) => {
   );
 };
 
-export const mapCardTransactions = async ({ cardAccounts, overridesMap }) => {
+const tripFor = (trips, txn) =>
+  trips.find(
+    (trip) =>
+      trip.currency === txn.originalCurrency &&
+      txn.date >= trip.start_date &&
+      txn.date <= trip.end_date &&
+      !trip.excluded_max_categories.includes(txn.category),
+  );
+
+export const mapCardTransactions = async ({ cardAccounts, overridesMap, trips = [] }) => {
   const cardYnabAccountIds = { 6312: process.env.BARAK_CARD, 7626: process.env.ADI_CARD };
   const cards = [];
 
@@ -49,14 +58,16 @@ export const mapCardTransactions = async ({ cardAccounts, overridesMap }) => {
         overridesMap,
       );
       if (!payload) continue;
+      const trip = tripFor(trips, txn);
+      const categorized = trip ? { ...payload, category_id: trip.category_id, baseCategoryId: payload.category_id } : payload;
 
       if (isPending) {
         const pendingKey = `${txn.date}|${txn.originalAmount}|${normalizeDescription(txn.description)}`;
         const ordinal = pendingOrdinals.get(pendingKey) ?? 0;
         pendingOrdinals.set(pendingKey, ordinal + 1);
-        pending.push({ ...payload, maxCategory: txn.category, cleared: 'uncleared', approved: true, flag_color: null, import_id: pendingImportId(card.accountNumber, txn, ordinal) });
+        pending.push({ ...categorized, maxCategory: txn.category, cleared: 'uncleared', approved: true, flag_color: null, import_id: pendingImportId(card.accountNumber, txn, ordinal) });
       } else {
-        completed.push({ ...payload, maxCategory: txn.category, cleared: 'cleared', approved: true, import_id: `max:${txn.identifier}` });
+        completed.push({ ...categorized, maxCategory: txn.category, cleared: 'cleared', approved: true, import_id: `max:${txn.identifier}` });
       }
     }
 

@@ -45,7 +45,10 @@ npm run sync:cards -- --days 45 --upload --apply-deletes # also remove pending r
 ```
 
 Covers Executive Card (6312) and Adi's Card (7626). Settled charges upload cleared with
-`import_id = max:<Max transaction id>`; pending charges upload uncleared with memo
-`max-pending` and are replaced when they settle. Categories come from the payee overrides,
+`import_id = max:<Max transaction id>`, or `max-noid:<hash>` when Max reports the id as `0`
+(standing orders such as נירים). Pending charges upload uncleared with memo `max-pending`
+and are replaced when they settle. Max has no shekel amount for a pending foreign charge, so
+it is estimated with the rate implied by the settled charges in the same currency, and kept
+pending rows whose amount moved are updated in place. Categories come from the payee overrides,
 then `mapper/CategoriesMapper.json`. Card payments are not created here; the bank sync
 records them as transfers.

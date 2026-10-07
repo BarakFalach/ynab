@@ -54,6 +54,9 @@ row that replaces each, when one exists. These are removed only with `--apply-de
 
 **Extra rows** (`extra`): cleared YNAB rows not on the Max statement. Report only. Never delete.
 
+`pending-amount` actions (a kept pending row whose estimated shekel amount changed) are applied by
+`--upload` and need no question.
+
 Ask the user with one question per table, answerable yes/no or by naming a category. Do not proceed
 past this step without an answer for deletions. Categories and rules may be applied when the user
 says "apply all".

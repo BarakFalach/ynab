@@ -14,6 +14,7 @@ import {
   uploadCardTransactions,
   clearCardTransactions,
   recategorizeCardTransactions,
+  reamountCardTransactions,
   deleteCardTransaction,
 } from '../ynabApi/cards.js';
 
@@ -113,6 +114,7 @@ for (const card of cards) {
   const toUpload = [];
   const toClear = [];
   const toRecategorize = [];
+  const toReamount = [];
   const claim = (match, candidate) => {
     unclaimed.delete(match);
     if (needsTripCategory(match, candidate)) toRecategorize.push({ ...match, category_id: candidate.category_id });
@@ -149,6 +151,7 @@ for (const card of cards) {
     if (match) {
       claim(match, candidate);
       pendingKept += 1;
+      if (!isCleared(match) && match.amount !== candidate.amount) toReamount.push({ ...match, amount: candidate.amount, previousAmount: match.amount });
     } else {
       toUpload.push(candidate);
     }
@@ -165,6 +168,7 @@ for (const card of cards) {
     ...uploadPending.map((t) => ({ ...t, action: 'upload-pending' })),
     ...toClear.map((t) => ({ ...t, action: 'clear' })),
     ...toRecategorize.map((t) => ({ ...t, action: 'trip-category' })),
+    ...toReamount.map((t) => ({ ...t, action: 'pending-amount' })),
     ...staleToDelete.map((t) => ({ ...t, action: 'delete-stale' })),
     ...extra.map((t) => ({ ...t, action: 'extra' })),
   ].sort((a, b) => a.date.localeCompare(b.date));
@@ -177,14 +181,18 @@ for (const card of cards) {
     }
   }
   console.log(
-    `completed matched ${completedMatched} · toUpload completed ${uploadCompleted.length} · toUpload pending ${uploadPending.length} · pending kept ${pendingKept} · pendingSuperseded ${card.pendingSuperseded} · toClear ${toClear.length} · tripRecategorize ${toRecategorize.length} · staleToDelete ${staleToDelete.length} · extra ${extra.length} · uncategorized uploads ${uncategorized.length}`,
+    `completed matched ${completedMatched} · toUpload completed ${uploadCompleted.length} · toUpload pending ${uploadPending.length} · pending kept ${pendingKept} · pendingSuperseded ${card.pendingSuperseded} · toClear ${toClear.length} · pendingReamount ${toReamount.length} · tripRecategorize ${toRecategorize.length} · staleToDelete ${staleToDelete.length} · extra ${extra.length} · uncategorized uploads ${uncategorized.length}`,
   );
   if (staleToDelete.length && !(upload && applyDeletes)) console.log(`stale rows are listed only; pass --upload --apply-deletes to delete them`);
 
   const staleIds = new Set(staleToDelete.map((t) => t.id));
   const clearIds = new Set(toClear.map((t) => t.id));
+  const reamountById = new Map(toReamount.map((t) => [t.id, t.amount]));
   const afterPlannedActions = [
-    ...existing.filter((t) => !(applyDeletes && staleIds.has(t.id))).map((t) => (clearIds.has(t.id) ? { ...t, cleared: 'cleared' } : t)),
+    ...existing
+      .filter((t) => !(applyDeletes && staleIds.has(t.id)))
+      .map((t) => (clearIds.has(t.id) ? { ...t, cleared: 'cleared' } : t))
+      .map((t) => (reamountById.has(t.id) ? { ...t, amount: reamountById.get(t.id) } : t)),
     ...toUpload,
   ];
   const planned = consistency(card, afterPlannedActions);
@@ -201,6 +209,7 @@ for (const card of cards) {
       pendingKept,
       pendingSuperseded: card.pendingSuperseded,
       toClear: toClear.length,
+      pendingReamount: toReamount.length,
       tripRecategorize: toRecategorize.length,
       staleToDelete: staleToDelete.length,
       extra: extra.length,
@@ -210,6 +219,7 @@ for (const card of cards) {
       action: t.action,
       date: t.date,
       amount: t.amount / 1000,
+      previousAmount: t.previousAmount !== undefined ? t.previousAmount / 1000 : undefined,
       payeeName: t.payee_name ?? null,
       categoryName: t.category_id ? categoryLabel(t) : null,
       maxCategory: t.maxCategory ?? null,
@@ -229,7 +239,7 @@ for (const card of cards) {
     })),
   );
 
-  plans.push({ card, cardReport, toUpload, toClear, toRecategorize, staleToDelete });
+  plans.push({ card, cardReport, toUpload, toClear, toRecategorize, toReamount, staleToDelete });
 }
 
 if (!upload) {
@@ -259,6 +269,13 @@ if (allToRecategorize.length) {
   console.log(`moved to trip category: ${recategorized} rows`);
 }
 
+const allToReamount = plans.flatMap((p) => p.toReamount);
+let reamounted = 0;
+if (allToReamount.length) {
+  reamounted = await reamountCardTransactions(allToReamount);
+  console.log(`updated pending amounts: ${reamounted} rows`);
+}
+
 let deleted = 0;
 if (applyDeletes) {
   const allStale = plans.flatMap((p) => p.staleToDelete);
@@ -266,7 +283,7 @@ if (applyDeletes) {
   deleted = allStale.length;
   console.log(`deleted stale: ${deleted} rows`);
 }
-report.totals = { created, cleared, recategorized, deleted };
+report.totals = { created, cleared, recategorized, reamounted, deleted };
 
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 let allOk = true;
